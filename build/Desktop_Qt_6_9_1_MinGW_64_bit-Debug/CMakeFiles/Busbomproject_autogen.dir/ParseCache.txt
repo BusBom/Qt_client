@@ -874,7 +874,7 @@ C:/Users/2-06/Documents/Busbomproject/settingsdialog.h
  mdp:C:/Qt/Tools/mingw1310_64/x86_64-w64-mingw32/include/wchar.h
  mdp:C:/Users/2-06/Documents/Busbomproject/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug/Busbomproject_autogen/moc_predefs.h
  mdp:C:/Users/2-06/Documents/Busbomproject/settingsdialog.h
-C:/Users/2-06/Documents/Busbomproject/settingsdialog.cpp
 C:/Users/2-06/Documents/Busbomproject/main.cpp
+C:/Users/2-06/Documents/Busbomproject/settingsdialog.cpp
 C:/Users/2-06/Documents/Busbomproject/mainwindow.cpp
  uic:ui_mainwindow.h

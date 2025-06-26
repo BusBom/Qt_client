@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/img">
-        <file>build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug/images/bus_face.png</file>
+        <file>img/images/bus_face.png</file>
     </qresource>
 </RCC>
