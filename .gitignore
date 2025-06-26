@@ -1,0 +1,11 @@
+build-*/
+*.user
+*.o
+*.pro.user
+Makefile*
+*.autosave
+*.obj
+*.exe
+*.dll
+*.so
+*.a
