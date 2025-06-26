@@ -9,6 +9,21 @@
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QListWidget>
+#include <QMouseEvent>
+#include <QPaintEvent>
+#include <QStyleOptionSlider>
+#include <QPainter>
+
+class ClickableSlider : public QSlider
+{
+    Q_OBJECT
+public:
+    explicit ClickableSlider(Qt::Orientation orientation, QWidget *parent = nullptr);
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+};
 
 class SettingsDialog : public QDialog
 {
@@ -35,10 +50,10 @@ private:
     QCheckBox *autoConnectCheck;
 
     // Camera
-    QSlider *brightnessSlider;
-    QSlider *contrastSlider;
-    QSlider *exposureSlider;
-    QSlider *saturationSlider;
+    ClickableSlider *brightnessSlider;
+    ClickableSlider *contrastSlider;
+    ClickableSlider *exposureSlider;
+    ClickableSlider *saturationSlider;
 
     // Sleep Mode
     QTimeEdit *sleepStartEdit;
@@ -46,5 +61,6 @@ private:
 
     QPushButton *updateBtn;
 };
+
 
 #endif // SETTINGSDIALOG_H

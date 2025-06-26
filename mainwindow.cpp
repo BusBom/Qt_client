@@ -30,7 +30,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::setupUI() {
     // 🚍 Title + Icon
-    QLabel *titleLabel = new QLabel("<img src=:/img/images/bus_face.png width=32 height=32> <b style='font-size:25px;'>Live Dashboard</b>");
+    QLabel *titleLabel = new QLabel("<img src='" + PATH + "/images/bus_face.png' width=32 height=32> "
+                                                          "<b style='font-size:25px;'>Live Dashboard</b>");
     titleLabel->setStyleSheet("color: white;");
 
     // 🟢 정류장 선택 dropdown

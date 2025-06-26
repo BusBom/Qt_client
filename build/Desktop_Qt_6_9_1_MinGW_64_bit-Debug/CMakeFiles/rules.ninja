@@ -42,7 +42,7 @@ rule CUSTOM_COMMAND
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
-  command = C:\Qt\Tools\CMake_64\bin\cmake.exe --regenerate-during-build -SC:\Users\2-06\Documents\Busbomproject -BC:\Users\2-06\Documents\Busbomproject\build\Desktop_Qt_6_9_1_MinGW_64_bit-Debug
+  command = C:\Qt\Tools\CMake_64\bin\cmake.exe --regenerate-during-build -SD:\workspace\project\Busbom_Qt -BD:\workspace\project\Busbom_Qt\build\Desktop_Qt_6_9_1_MinGW_64_bit-Debug
   description = Re-running CMake...
   generator = 1
 
@@ -59,7 +59,7 @@ rule CLEAN_ADDITIONAL
 # Rule for cleaning all built files.
 
 rule CLEAN
-  command = C:\mingw64\bin\ninja.exe $FILE_ARG -t clean $TARGETS
+  command = C:\ProgramData\chocolatey\bin\ninja.exe $FILE_ARG -t clean $TARGETS
   description = Cleaning all built files...
 
 
@@ -67,6 +67,6 @@ rule CLEAN
 # Rule for printing all primary targets available.
 
 rule HELP
-  command = C:\mingw64\bin\ninja.exe -t targets
+  command = C:\ProgramData\chocolatey\bin\ninja.exe -t targets
   description = All primary targets available:
 

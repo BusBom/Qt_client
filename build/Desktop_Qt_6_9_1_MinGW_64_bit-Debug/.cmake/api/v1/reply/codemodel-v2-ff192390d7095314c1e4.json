@@ -52,7 +52,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "Busbomproject::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-Busbomproject-Debug-8d75d0f041e643e89cad.json",
+					"jsonFile" : "target-Busbomproject-Debug-7ded65a96091070c721e.json",
 					"name" : "Busbomproject",
 					"projectIndex" : 0
 				},
@@ -104,8 +104,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "C:/Users/2-06/Documents/Busbomproject/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug",
-		"source" : "C:/Users/2-06/Documents/Busbomproject"
+		"build" : "D:/workspace/project/Busbom_Qt/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug",
+		"source" : "D:/workspace/project/Busbom_Qt"
 	},
 	"version" : 
 	{

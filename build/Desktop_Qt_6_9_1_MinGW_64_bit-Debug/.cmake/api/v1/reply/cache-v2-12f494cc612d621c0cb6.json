@@ -11,7 +11,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/Users/2-06/Documents/Busbomproject/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug"
+			"value" : "D:/workspace/project/Busbom_Qt/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug"
 		},
 		{
 			"name" : "Busbomproject_IS_TOP_LEVEL",
@@ -35,7 +35,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/Users/2-06/Documents/Busbomproject"
+			"value" : "D:/workspace/project/Busbom_Qt"
 		},
 		{
 			"name" : "CMAKE_ADDR2LINE",
@@ -91,7 +91,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "c:/Users/2-06/Documents/Busbomproject/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug"
+			"value" : "d:/workspace/project/Busbom_Qt/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -515,7 +515,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/Users/2-06/Documents/Busbomproject/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug/CMakeFiles/pkgRedirects"
+			"value" : "D:/workspace/project/Busbom_Qt/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug/CMakeFiles/pkgRedirects"
 		},
 		{
 			"name" : "CMAKE_GENERATOR",
@@ -599,7 +599,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "C:/Users/2-06/Documents/Busbomproject"
+			"value" : "D:/workspace/project/Busbom_Qt"
 		},
 		{
 			"name" : "CMAKE_INSTALL_BINDIR",
@@ -899,7 +899,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/mingw64/bin/ninja.exe"
+			"value" : "C:/ProgramData/chocolatey/bin/ninja.exe"
 		},
 		{
 			"name" : "CMAKE_MODULE_LINKER_FLAGS",
@@ -1099,7 +1099,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/Users/2-06/Documents/Busbomproject/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug/.qtc/package-manager/auto-setup.cmake"
+			"value" : "D:/workspace/project/Busbom_Qt/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug/.qtc/package-manager/auto-setup.cmake"
 		},
 		{
 			"name" : "CMAKE_PROJECT_NAME",
@@ -6651,7 +6651,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "C:/Users/2-06/Documents/Busbomproject/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug/.qt/bin/qt_setup_tool_path.bat"
+			"value" : "D:/workspace/project/Busbom_Qt/build/Desktop_Qt_6_9_1_MinGW_64_bit-Debug/.qt/bin/qt_setup_tool_path.bat"
 		},
 		{
 			"name" : "Qt6CorePrivate_DIR",

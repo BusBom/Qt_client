@@ -31,16 +31,29 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     networkPage->setLayout(networkLayout);
 
     // 🎥 카메라 설정 페이지
-    brightnessSlider = new QSlider(Qt::Horizontal, this);
-    contrastSlider = new QSlider(Qt::Horizontal, this);
-    exposureSlider = new QSlider(Qt::Horizontal, this);
-    saturationSlider = new QSlider(Qt::Horizontal, this);
+    brightnessSlider = new ClickableSlider(Qt::Horizontal, this);
+    brightnessSlider->setRange(0, 100);
+    brightnessSlider->setTickInterval(1);
+    contrastSlider = new ClickableSlider(Qt::Horizontal, this);
+    contrastSlider->setRange(0, 100);
+    contrastSlider->setTickInterval(1);
+    exposureSlider = new ClickableSlider(Qt::Horizontal, this);
+    exposureSlider->setRange(0, 100);
+    exposureSlider->setTickInterval(1);
+    saturationSlider = new ClickableSlider(Qt::Horizontal, this);
+    saturationSlider->setRange(0, 100);
+    saturationSlider->setTickInterval(1);
 
     QFormLayout *cameraLayout = new QFormLayout;
+    cameraLayout->setVerticalSpacing(20);
+    cameraLayout->setHorizontalSpacing(15);
+    cameraLayout->setContentsMargins(10, 10, 10, 10);
+
     cameraLayout->addRow("Brightness:", brightnessSlider);
     cameraLayout->addRow("Contrast:", contrastSlider);
     cameraLayout->addRow("Exposure:", exposureSlider);
     cameraLayout->addRow("Saturation:", saturationSlider);
+
     QWidget *cameraPage = new QWidget;
     cameraPage->setLayout(cameraLayout);
 
@@ -92,3 +105,61 @@ void SettingsDialog::onUpdateClicked() {
     accept();
 }
 
+
+ClickableSlider::ClickableSlider(Qt::Orientation orientation, QWidget *parent)
+    : QSlider(orientation, parent)
+{
+    setMinimumHeight(30);
+}
+
+void ClickableSlider::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        int sliderMin = this->minimum();
+        int sliderMax = this->maximum();
+        int newValue;
+
+        if (orientation() == Qt::Horizontal) {
+            int clickPos = event->x();
+            int sliderWidth = this->width();
+            double ratio = static_cast<double>(clickPos) / sliderWidth;
+            ratio = std::min(std::max(ratio, 0.0), 1.0);
+            newValue = sliderMin + static_cast<int>(ratio * (sliderMax - sliderMin));
+        } else {
+            int clickPos = event->y();
+            int sliderHeight = this->height();
+            double ratio = static_cast<double>(sliderHeight - clickPos) / sliderHeight;
+            ratio = std::min(std::max(ratio, 0.0), 1.0);
+            newValue = sliderMin + static_cast<int>(ratio * (sliderMax - sliderMin));
+        }
+
+        this->setValue(newValue);
+    }
+
+    QSlider::mousePressEvent(event);
+}
+
+void ClickableSlider::paintEvent(QPaintEvent *event)
+{
+    QSlider::paintEvent(event);
+
+    QPainter painter(this);
+    QStyleOptionSlider opt;
+    initStyleOption(&opt);
+
+    QRect handleRect = style()->subControlRect(QStyle::CC_Slider, &opt, QStyle::SC_SliderHandle, this);
+
+    // 텍스트 설정
+    QString valueText = QString::number(value());
+    QFont font;
+    font.setPointSize(8);
+    painter.setFont(font);
+    painter.setPen(Qt::white);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    // 위치: 우측 상단 (슬라이더 전체 기준)
+    int textX = width() - 35;
+    int textY = 15;
+
+    painter.drawText(QRect(textX, textY, 30, 20), Qt::AlignRight, valueText);
+}
