@@ -76,11 +76,34 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     // ⚙️ 업데이트 버튼
     updateBtn = new QPushButton("Update", this);
+    updateBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #f37321;     /* 밝은 파란색 배경 */
+            color: white;                  /* 흰색 텍스트 */
+            border-radius: 15px;           /* 둥근 모서리 */
+            font-size: 13px;
+            padding: 5px;
+        }
+        QPushButton:hover {
+            background-color: #f89b6c;     /* 호버 시 진한 파랑 */
+        }
+        QPushButton:pressed {
+            background-color: #fbb584;     /* 눌렀을 때 더 진한 파랑 */
+        }
+    )");
+    updateBtn->setFixedSize(110, 30);
+
     connect(updateBtn, &QPushButton::clicked, this, &SettingsDialog::onUpdateClicked);
 
     QVBoxLayout *rightLayout = new QVBoxLayout;
+
+    QHBoxLayout *rightHLayout = new QHBoxLayout;
+    rightHLayout->setContentsMargins(10, 5, 10, 5);
+    rightHLayout->addStretch();
+    rightHLayout->addWidget(updateBtn);
+
     rightLayout->addWidget(stackedPages);
-    rightLayout->addWidget(updateBtn);
+    rightLayout->addLayout(rightHLayout);
 
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
     mainLayout->addWidget(pageSelector);

@@ -36,8 +36,19 @@ void MainWindow::setupUI() {
 
     // 🟢 정류장 선택 dropdown
     stopSelector = new QComboBox(this);
+    stopSelector->setStyleSheet(R"(
+        QComboBox {
+            font-size: 12pt;
+            background-color: #2e2e2e;
+            color: white;
+            border-radius: 30px;
+            padding: 4px;
+        }
+        QComboBox QAbstractItemView {
+            font-size: 12pt;
+        }
+    )");
     stopSelector->addItems({"래미안아파트.파이낸셜뉴스", "신분당선 강남역", "지하철2호선 강남역", "논현역"});
-    stopSelector->setStyleSheet("background-color: #2e2e2e; color: white; border-radius: 30px; padding: 4px;");
 
     // 🟢 상태 표시
     statusRpi = new QLabel("Raspberry Pi: 🔴");
