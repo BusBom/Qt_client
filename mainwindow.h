@@ -30,6 +30,7 @@ private slots:
     void fetchBusData();
 
 private:
+    const QString PATH = QCoreApplication::applicationDirPath();
     Ui::MainWindow *ui;
 
     SettingsDialog *settingsDlg;

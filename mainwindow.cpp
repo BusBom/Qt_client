@@ -29,13 +29,28 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 void MainWindow::setupUI() {
-    QLabel *titleLabel = new QLabel("<img src=:/img/images/bus_face.png width=32 height=32> <b style='font-size:25px;'>Live Dashboard</b>");
+
+    // 🚍 Title + Icon
+    QLabel *titleLabel = new QLabel("<img src='" + PATH + "/images/bus_face.png' width=32 height=32> "
+                                                          "<b style='font-size:25px;'>Live Dashboard</b>");
+
     titleLabel->setStyleSheet("color: white;");
     titleLabel->setAlignment(Qt::AlignLeft);
 
     stopSelector = new QComboBox(this);
+    stopSelector->setStyleSheet(R"(
+        QComboBox {
+            font-size: 12pt;
+            background-color: #2e2e2e;
+            color: white;
+            border-radius: 30px;
+            padding: 4px;
+        }
+        QComboBox QAbstractItemView {
+            font-size: 12pt;
+        }
+    )");
     stopSelector->addItems({"래미안아파트.파이낸셜뉴스", "신분당선 강남역", "지하철2호선 강남역", "논현역"});
-    stopSelector->setStyleSheet("background-color: #2e2e2e; color: white; border-radius: 30px; padding: 4px;");
 
     statusRpi = new QLabel("Raspberry Pi: 🔴");
     statusCam = new QLabel("Camera: 🔴");
