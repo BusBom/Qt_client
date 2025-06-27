@@ -29,11 +29,9 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 void MainWindow::setupUI() {
-
     // 🚍 Title + Icon
     QLabel *titleLabel = new QLabel("<img src='" + PATH + "/images/bus_face.png' width=32 height=32> "
                                                           "<b style='font-size:25px;'>Live Dashboard</b>");
-
     titleLabel->setStyleSheet("color: white;");
     titleLabel->setAlignment(Qt::AlignLeft);
 
@@ -55,7 +53,6 @@ void MainWindow::setupUI() {
     statusRpi = new QLabel("Raspberry Pi: 🔴");
     statusCam = new QLabel("Camera: 🔴");
     statusStm32 = new QLabel("STM32: 🔴");
-
     statusRpi->setFixedWidth(140);
     statusCam->setFixedWidth(110);
     statusStm32->setFixedWidth(100);
@@ -77,17 +74,6 @@ void MainWindow::setupUI() {
     settingsButton->setStyleSheet("color: white; background: transparent; font-size: 14px;");
     settingsButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
-    QVBoxLayout *settingsWrapper = new QVBoxLayout;
-    {
-        QHBoxLayout *innerLayout = new QHBoxLayout;
-        innerLayout->addStretch();
-        innerLayout->addWidget(settingsButton);
-        settingsWrapper->addLayout(innerLayout);
-    }
-    settingsWrapper->addSpacing(5);
-    QWidget *settingsWidget = new QWidget(this);
-    settingsWidget->setLayout(settingsWrapper);
-
     QHBoxLayout *topLayout = new QHBoxLayout;
     topLayout->setAlignment(Qt::AlignTop);
     topLayout->addLayout(leftHeader);
@@ -97,36 +83,48 @@ void MainWindow::setupUI() {
     QWidget *topWidget = new QWidget(this);
     topWidget->setLayout(topLayout);
 
+    // ✅ stream frame 만들기
     QLabel *streamTitle = new QLabel("📺 Live Stream");
-    streamTitle->setStyleSheet("font-size: 20px; color: white;");
+    streamTitle->setStyleSheet("font-size: 18px; color: white;");
+    streamTitle->setAlignment(Qt::AlignLeft);  //여기 추가
 
     QLabel *streamArea = new QLabel(this);
-    streamArea->setFixedSize(800, 480);
-    streamArea->setStyleSheet("background-color: black; border: 2px solid #444;");
+    streamArea->setFixedSize(800, 450);
+    streamArea->setStyleSheet("background-color: black; border: 2px solid #444; border-radius: 0px;");
     streamArea->setAlignment(Qt::AlignCenter);
     streamArea->setText("<font color='gray'>영상 스트리밍 출력</font>");
 
-    QVBoxLayout *streamLayout = new QVBoxLayout;
-    streamLayout->addWidget(streamTitle);
-    streamLayout->addWidget(streamArea);
+    // ✅ streamTitle 왼쪽 정렬을 streamArea에 맞추기
+    QHBoxLayout *titleLayout = new QHBoxLayout;
+    titleLayout->setContentsMargins(0, 0, 0, 0);
+    titleLayout->addSpacing(5);  // ✅ streamArea 안쪽 여백 맞추기용
+    titleLayout->addWidget(streamTitle);
+    titleLayout->addStretch();
 
-    // ✅ bus frame
+    // ✅ stream 전체 묶는 수직 레이아웃
+    QVBoxLayout *streamLayout = new QVBoxLayout;
+    streamLayout->setAlignment(Qt::AlignVCenter);  // ✅ 중앙 정렬
+    streamLayout->addLayout(titleLayout);
+    streamLayout->addSpacing(5);
+    streamLayout->addWidget(streamArea, 0, Qt::AlignHCenter);
+
+
+    QFrame *streamFrame = new QFrame(this);
+    streamFrame->setFixedSize(830, 510);  // 버스 프레임과 높이 통일
+    streamFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 20px;");
+    streamFrame->setLayout(streamLayout);
+
+    // ✅ bus frame 그대로 유지
     QFrame *busFrame = new QFrame(this);
     busFrame->setFixedSize(385, 510);
-    busFrame->setStyleSheet(
-        "background-color: #2a2a2a;"
-        "border-radius: 20px;"
-        );
+    busFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 20px;");
 
     QLabel *busNumberHeader = new QLabel("Bus Number", busFrame);
     QLabel *platformHeader = new QLabel("Platform", busFrame);
-
     busNumberHeader->setAlignment(Qt::AlignCenter);
     platformHeader->setAlignment(Qt::AlignCenter);
-
-    busNumberHeader->setFixedSize(160, 50);
-    platformHeader->setFixedSize(160, 50);
-
+    busNumberHeader->setFixedSize(160, 40);
+    platformHeader->setFixedSize(160, 40);
     QString headerStyle = R"(
         background-color: #000;
         color: white;
@@ -148,25 +146,15 @@ void MainWindow::setupUI() {
 
     QTableWidget *infoTable = new QTableWidget(4, 2, busFrame);
     infoTable->setFixedSize(320, 360);
-
     infoTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     infoTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
     infoTable->horizontalHeader()->setVisible(false);
     infoTable->verticalHeader()->setVisible(false);
-
     infoTable->setShowGrid(false);
     infoTable->setStyleSheet(
-        "QTableWidget {"
-        "  background-color: transparent;"
-        "  color: white;"
-        "  border: none;"
-        "}"
-        "QTableView::item {"
-        "  border: none;"
-        "}"
+        "QTableWidget { background-color: transparent; color: white; border: none; }"
+        "QTableView::item { border: none; }"
         );
-
     infoTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     infoTable->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
@@ -175,9 +163,7 @@ void MainWindow::setupUI() {
             QLabel *cell = new QLabel("", infoTable);
             cell->setAlignment(Qt::AlignCenter);
             QString style = "background-color: transparent; color: white;";
-
             QString platformText = "";
-
             if (col == 1) {
                 switch (row) {
                 case 0: platformText = "    P4"; break;
@@ -187,24 +173,25 @@ void MainWindow::setupUI() {
                 }
                 style += "font-size: 18px; font-weight: bold;";
             }
-
-            cell->setText(platformText);   // ✅ 글씨 넣는 핵심 코드!!!
+            cell->setText(platformText);
             cell->setStyleSheet(style);
             infoTable->setCellWidget(row, col, cell);
         }
     }
 
     busFrameLayout->addLayout(headerLayout);
-    busFrameLayout->addSpacing(10);
+    busFrameLayout->addSpacing(20);
     busFrameLayout->addWidget(infoTable, 0, Qt::AlignHCenter);
+    busFrameLayout->addSpacing(0);
 
+    // ⬅ 중단 중앙 레이아웃
     QHBoxLayout *middleLayout = new QHBoxLayout;
-    middleLayout->addLayout(streamLayout);
+    middleLayout->addWidget(streamFrame);
     middleLayout->addSpacing(20);
     middleLayout->addWidget(busFrame);
 
+    // 전체 메인 레이아웃
     QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addWidget(settingsWidget);
     mainLayout->addWidget(topWidget);
     mainLayout->addLayout(middleLayout);
 
@@ -212,6 +199,7 @@ void MainWindow::setupUI() {
     central->setLayout(mainLayout);
     setCentralWidget(central);
 }
+
 
 void MainWindow::setupConnections() {
     connect(settingsButton, &QPushButton::clicked, this, &MainWindow::onSettingsClicked);
