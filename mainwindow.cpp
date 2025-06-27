@@ -17,6 +17,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     this->setFixedSize(1280, 720);
     setStyleSheet("background-color: #1e1e1e; color: white;");
+    QIcon icon(PATH + "/images/bus_face.png");
+    setWindowIcon(icon);
 
     setupUI();
     setupConnections();
@@ -31,11 +33,12 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::setupUI() {
 
     // 🚍 Title + Icon
-    QLabel *titleLabel = new QLabel("<img src='" + PATH + "/images/bus_face.png' width=32 height=32> "
-                                                          "<b style='font-size:25px;'>Live Dashboard</b>");
-
-    titleLabel->setStyleSheet("color: white;");
-    titleLabel->setAlignment(Qt::AlignLeft);
+    QLabel *titleImgLabel = new QLabel("<img src='" + PATH + "/images/bus_face.png' width=32 height=32>");
+    //titleImgLabel->setAlignment(Qt::AlignLeft);
+    QLabel *titleTextLabel = new QLabel("<b style='font-size:25px; color: white;'> Live Dashboard</b>");
+    titleTextLabel->setContentsMargins(0, 0, 0, 2);
+    //titleTextLabel->setStyleSheet("color: white;");
+    //titleTextLabel->setAlignment(Qt::AlignLeft);
 
     stopSelector = new QComboBox(this);
     stopSelector->setStyleSheet(R"(
@@ -52,25 +55,54 @@ void MainWindow::setupUI() {
     )");
     stopSelector->addItems({"래미안아파트.파이낸셜뉴스", "신분당선 강남역", "지하철2호선 강남역", "논현역"});
 
-    statusRpi = new QLabel("Raspberry Pi: 🔴");
+    statusRpi = new QLabel("Server: 🔴");
+    statusRpi->setStyleSheet("background-color: #313131;");
     statusCam = new QLabel("Camera: 🔴");
-    statusStm32 = new QLabel("STM32: 🔴");
+    statusCam->setStyleSheet("background-color: #313131;");
+    statusStm32 = new QLabel("Display: 🔴");
+    statusStm32->setStyleSheet("background-color: #313131;");
 
-    statusRpi->setFixedWidth(140);
-    statusCam->setFixedWidth(110);
-    statusStm32->setFixedWidth(100);
+    statusRpi->setFixedWidth(70);
+    statusCam->setFixedWidth(70);
+    statusStm32->setFixedWidth(70);
+
+    QWidget *statusWidget = new QWidget;             // 또는 QFrame *statusWidget = new QFrame;
+    statusWidget->setObjectName("statusWidget");
+    statusWidget->setStyleSheet(R"(
+    #statusWidget {
+        background-color: #313131;
+        border: 1px solid #313131;
+        border-radius: 15px;
+        padding-left: 15px;
+        padding-right: 15px;
+
+    }
+
+    QLabel {
+        qproperty-alignment: 'AlignCenter';  /* QLabel 내부 텍스트 중앙 정렬 */
+    }
+    )");
+    QHBoxLayout *statusBtnLayout = new QHBoxLayout;
+    statusBtnLayout->setAlignment(Qt::AlignCenter);
+    statusBtnLayout->addWidget(statusRpi);
+    statusBtnLayout->addWidget(statusCam);
+    statusBtnLayout->addWidget(statusStm32);
+    statusWidget->setLayout(statusBtnLayout);
+
+    QHBoxLayout *leftHeaderHDiv = new QHBoxLayout;
+    leftHeaderHDiv->setAlignment(Qt::AlignLeft);
+    leftHeaderHDiv->addWidget(titleImgLabel);
+    leftHeaderHDiv->addWidget(titleTextLabel);
 
     QHBoxLayout *statusLayout = new QHBoxLayout;
     statusLayout->setAlignment(Qt::AlignLeft);
     statusLayout->setSpacing(5);
     statusLayout->addWidget(stopSelector);
-    statusLayout->addSpacing(10);
-    statusLayout->addWidget(statusRpi);
-    statusLayout->addWidget(statusCam);
-    statusLayout->addWidget(statusStm32);
+    statusLayout->addSpacing(20);
+    statusLayout->addWidget(statusWidget);
 
     QVBoxLayout *leftHeader = new QVBoxLayout;
-    leftHeader->addWidget(titleLabel);
+    leftHeader->addLayout(leftHeaderHDiv);
     leftHeader->addLayout(statusLayout);
 
     settingsButton = new QPushButton("⚙️ Settings");
@@ -228,9 +260,9 @@ void MainWindow::onStopChanged(int index) {
 }
 
 void MainWindow::updateConnectionStatus() {
-    statusRpi->setText("Raspberry Pi: 🟢");
+    statusRpi->setText("Server: 🟢");
     statusCam->setText("Camera: 🟢");
-    statusStm32->setText("STM32: 🟢");
+    statusStm32->setText("Display: 🟢");
 }
 
 void MainWindow::fetchBusData() {
