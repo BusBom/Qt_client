@@ -29,12 +29,14 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 void MainWindow::setupUI() {
+
     // 🚍 Title + Icon
     QLabel *titleLabel = new QLabel("<img src='" + PATH + "/images/bus_face.png' width=32 height=32> "
                                                           "<b style='font-size:25px;'>Live Dashboard</b>");
-    titleLabel->setStyleSheet("color: white;");
 
-    // 🟢 정류장 선택 dropdown
+    titleLabel->setStyleSheet("color: white;");
+    titleLabel->setAlignment(Qt::AlignLeft);
+
     stopSelector = new QComboBox(this);
     stopSelector->setStyleSheet(R"(
         QComboBox {
@@ -50,12 +52,17 @@ void MainWindow::setupUI() {
     )");
     stopSelector->addItems({"래미안아파트.파이낸셜뉴스", "신분당선 강남역", "지하철2호선 강남역", "논현역"});
 
-    // 🟢 상태 표시
     statusRpi = new QLabel("Raspberry Pi: 🔴");
     statusCam = new QLabel("Camera: 🔴");
     statusStm32 = new QLabel("STM32: 🔴");
 
+    statusRpi->setFixedWidth(140);
+    statusCam->setFixedWidth(110);
+    statusStm32->setFixedWidth(100);
+
     QHBoxLayout *statusLayout = new QHBoxLayout;
+    statusLayout->setAlignment(Qt::AlignLeft);
+    statusLayout->setSpacing(5);
     statusLayout->addWidget(stopSelector);
     statusLayout->addSpacing(10);
     statusLayout->addWidget(statusRpi);
@@ -66,12 +73,23 @@ void MainWindow::setupUI() {
     leftHeader->addWidget(titleLabel);
     leftHeader->addLayout(statusLayout);
 
-    // ⚙️ Settings 버튼
     settingsButton = new QPushButton("⚙️ Settings");
     settingsButton->setStyleSheet("color: white; background: transparent; font-size: 14px;");
     settingsButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
+    QVBoxLayout *settingsWrapper = new QVBoxLayout;
+    {
+        QHBoxLayout *innerLayout = new QHBoxLayout;
+        innerLayout->addStretch();
+        innerLayout->addWidget(settingsButton);
+        settingsWrapper->addLayout(innerLayout);
+    }
+    settingsWrapper->addSpacing(5);
+    QWidget *settingsWidget = new QWidget(this);
+    settingsWidget->setLayout(settingsWrapper);
+
     QHBoxLayout *topLayout = new QHBoxLayout;
+    topLayout->setAlignment(Qt::AlignTop);
     topLayout->addLayout(leftHeader);
     topLayout->addStretch();
     topLayout->addWidget(settingsButton);
@@ -79,12 +97,11 @@ void MainWindow::setupUI() {
     QWidget *topWidget = new QWidget(this);
     topWidget->setLayout(topLayout);
 
-    // 📺 Live Stream 표시 박스 (프레임 포함)
     QLabel *streamTitle = new QLabel("📺 Live Stream");
-    streamTitle->setStyleSheet("font-size: 16px; color: white;");
+    streamTitle->setStyleSheet("font-size: 20px; color: white;");
 
-    QLabel *streamArea = new QLabel(this); // 영상 공간 placeholder
-    streamArea->setFixedSize(800, 480); // ✅ 영상 영역 사이즈 크게 설정
+    QLabel *streamArea = new QLabel(this);
+    streamArea->setFixedSize(800, 480);
     streamArea->setStyleSheet("background-color: black; border: 2px solid #444;");
     streamArea->setAlignment(Qt::AlignCenter);
     streamArea->setText("<font color='gray'>영상 스트리밍 출력</font>");
@@ -93,31 +110,101 @@ void MainWindow::setupUI() {
     streamLayout->addWidget(streamTitle);
     streamLayout->addWidget(streamArea);
 
-    // 🚌 버스 테이블
-    busTable = new QTableWidget(0, 2, this);
-    busTable->setHorizontalHeaderLabels({"Bus Number", "Platform"});
-    busTable->horizontalHeader()->setStretchLastSection(false);
-    busTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-    busTable->setColumnWidth(0, 200);  // ✅ 컬럼 폭 줄이기
-    busTable->setColumnWidth(1, 200);
-    busTable->setFixedWidth(400);      // ✅ 테이블 전체 폭 제한
-    busTable->setFixedHeight(520);
-    busTable->setStyleSheet(
-        "QTableWidget { background-color: #2a2a2a; color: white; border-radius: 20px; }"
-        "QHeaderView::section { background-color: rgba(0, 0, 0, 0.8); color: white; }"
-        "QTableWidget::item { background-color: rgba(0, 0, 0, 0.8); }"
+    // ✅ bus frame
+    QFrame *busFrame = new QFrame(this);
+    busFrame->setFixedSize(385, 510);
+    busFrame->setStyleSheet(
+        "background-color: #2a2a2a;"
+        "border-radius: 20px;"
         );
-    busTable->verticalHeader()->setVisible(false);
-    busTable->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 
-    // 전체 가운데 부분 레이아웃
+    QLabel *busNumberHeader = new QLabel("Bus Number", busFrame);
+    QLabel *platformHeader = new QLabel("Platform", busFrame);
+
+    busNumberHeader->setAlignment(Qt::AlignCenter);
+    platformHeader->setAlignment(Qt::AlignCenter);
+
+    busNumberHeader->setFixedSize(160, 50);
+    platformHeader->setFixedSize(160, 50);
+
+    QString headerStyle = R"(
+        background-color: #000;
+        color: white;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: bold;
+    )";
+    busNumberHeader->setStyleSheet(headerStyle);
+    platformHeader->setStyleSheet(headerStyle);
+
+    QHBoxLayout *headerLayout = new QHBoxLayout;
+    headerLayout->setAlignment(Qt::AlignHCenter);
+    headerLayout->addWidget(busNumberHeader);
+    headerLayout->addSpacing(20);
+    headerLayout->addWidget(platformHeader);
+
+    QVBoxLayout *busFrameLayout = new QVBoxLayout(busFrame);
+    busFrameLayout->setAlignment(Qt::AlignTop);
+
+    QTableWidget *infoTable = new QTableWidget(4, 2, busFrame);
+    infoTable->setFixedSize(320, 360);
+
+    infoTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    infoTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    infoTable->horizontalHeader()->setVisible(false);
+    infoTable->verticalHeader()->setVisible(false);
+
+    infoTable->setShowGrid(false);
+    infoTable->setStyleSheet(
+        "QTableWidget {"
+        "  background-color: transparent;"
+        "  color: white;"
+        "  border: none;"
+        "}"
+        "QTableView::item {"
+        "  border: none;"
+        "}"
+        );
+
+    infoTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    infoTable->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    for (int row = 0; row < 4; ++row) {
+        for (int col = 0; col < 2; ++col) {
+            QLabel *cell = new QLabel("", infoTable);
+            cell->setAlignment(Qt::AlignCenter);
+            QString style = "background-color: transparent; color: white;";
+
+            QString platformText = "";
+
+            if (col == 1) {
+                switch (row) {
+                case 0: platformText = "    P4"; break;
+                case 1: platformText = "    P3"; break;
+                case 2: platformText = "    P2"; break;
+                case 3: platformText = "    P1"; break;
+                }
+                style += "font-size: 18px; font-weight: bold;";
+            }
+
+            cell->setText(platformText);   // ✅ 글씨 넣는 핵심 코드!!!
+            cell->setStyleSheet(style);
+            infoTable->setCellWidget(row, col, cell);
+        }
+    }
+
+    busFrameLayout->addLayout(headerLayout);
+    busFrameLayout->addSpacing(10);
+    busFrameLayout->addWidget(infoTable, 0, Qt::AlignHCenter);
+
     QHBoxLayout *middleLayout = new QHBoxLayout;
     middleLayout->addLayout(streamLayout);
     middleLayout->addSpacing(20);
-    middleLayout->addWidget(busTable);
+    middleLayout->addWidget(busFrame);
 
-    // 전체 메인 레이아웃
     QVBoxLayout *mainLayout = new QVBoxLayout;
+    mainLayout->addWidget(settingsWidget);
     mainLayout->addWidget(topWidget);
     mainLayout->addLayout(middleLayout);
 
@@ -153,4 +240,3 @@ void MainWindow::fetchBusData() {
 MainWindow::~MainWindow() {
     delete ui;
 }
-
