@@ -37,6 +37,7 @@ signals:
 
 private slots:
     void onUpdateClicked();
+    void onCancelClicked();
     void onPageChanged(int index);  // ✅ 사이드바 클릭 시 처리
 
 private:
@@ -60,6 +61,7 @@ private:
     QTimeEdit *sleepEndEdit;
 
     QPushButton *updateBtn;
+    QPushButton *cancelBtn;
 };
 
 

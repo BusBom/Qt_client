@@ -80,7 +80,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
         QPushButton {
             background-color: #f37321;     /* 밝은 파란색 배경 */
             color: white;                  /* 흰색 텍스트 */
-            border-radius: 15px;           /* 둥근 모서리 */
+            border: 1px solid #303030;
+            border-radius: 10px;           /* 둥근 모서리 */
             font-size: 13px;
             padding: 5px;
         }
@@ -91,15 +92,36 @@ SettingsDialog::SettingsDialog(QWidget *parent)
             background-color: #fbb584;     /* 눌렀을 때 더 진한 파랑 */
         }
     )");
-    updateBtn->setFixedSize(110, 30);
-
+    updateBtn->setFixedSize(90, 25);
     connect(updateBtn, &QPushButton::clicked, this, &SettingsDialog::onUpdateClicked);
+
+    //cancel
+    cancelBtn = new QPushButton("Cancel", this);
+    cancelBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #f37321;     /* 밝은 파란색 배경 */
+            color: white;                  /* 흰색 텍스트 */
+            border: 1px solid #303030;
+            border-radius: 10px;           /* 둥근 모서리 */
+            font-size: 13px;
+            padding: 5px;
+        }
+        QPushButton:hover {
+            background-color: #f89b6c;     /* 호버 시 진한 파랑 */
+        }
+        QPushButton:pressed {
+            background-color: #fbb584;     /* 눌렀을 때 더 진한 파랑 */
+        }
+    )");
+    cancelBtn->setFixedSize(90, 25);
+    connect(cancelBtn, &QPushButton::clicked, this, &SettingsDialog::onCancelClicked);
 
     QVBoxLayout *rightLayout = new QVBoxLayout;
 
     QHBoxLayout *rightHLayout = new QHBoxLayout;
-    rightHLayout->setContentsMargins(10, 5, 10, 5);
+    rightHLayout->setContentsMargins(8, 5, 8, 5);
     rightHLayout->addStretch();
+    rightHLayout->addWidget(cancelBtn);
     rightHLayout->addWidget(updateBtn);
 
     rightLayout->addWidget(stackedPages);
@@ -125,6 +147,11 @@ void SettingsDialog::onPageChanged(int index) {
 void SettingsDialog::onUpdateClicked() {
     // TODO: 실제 설정 저장 & 서버로 전송
     emit configUpdated();
+    accept();
+}
+
+void SettingsDialog::onCancelClicked() {
+    // TODO: 창 닫기
     accept();
 }
 
