@@ -229,6 +229,7 @@ void MainWindow::setupUI() {
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addWidget(topWidget);
     mainLayout->addLayout(middleLayout);
+    mainLayout->addSpacing(45);
 
     QWidget *central = new QWidget(this);
     central->setLayout(mainLayout);
