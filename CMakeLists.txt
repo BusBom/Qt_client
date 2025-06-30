@@ -3,6 +3,8 @@ project(Busbomproject LANGUAGES CXX)
 
 # ✅ Qt6 모듈 한 번에 묶기
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 qt_standard_project_setup()
 
@@ -15,6 +17,10 @@ qt_add_executable(Busbomproject
     settingsdialog.h
     settingsdialog.cpp
     img.qrc
+    loginpage.h loginpage.cpp
+    appmanager.h appmanager.cpp
+    signuppage.h signuppage.cpp
+    dbmanager.h dbmanager.cpp
 )
 
 qt_add_translations(
@@ -29,6 +35,8 @@ target_link_libraries(Busbomproject
         Qt6::Widgets
         Qt6::Network
 )
+target_link_libraries(Busbomproject PRIVATE Qt6::Widgets)
+target_link_libraries(Busbomproject PRIVATE Qt6::Widgets)
 
 include(GNUInstallDirs)
 

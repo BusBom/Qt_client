@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "appmanager.h"
 
 #include <QApplication>
 #include <QLocale>
@@ -17,7 +18,8 @@ int main(int argc, char *argv[])
             break;
         }
     }
-    MainWindow w;
-    w.show();
+    AppManager manager;  // ✅ LoginPage → MainWindow 전환을 관리
+    manager.show();
+
     return a.exec();  //이벤트 루프 진입 : 마우스클릭, 키보드 입력 등 Qt가 내부적으로 감시
 }
