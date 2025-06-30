@@ -1,4 +1,5 @@
 #include "loginpage.h"
+#include "dbmanager.h"
 #include <QVBoxLayout>
 #include <QLineEdit>
 #include <QPushButton>
@@ -128,9 +129,8 @@ void LoginPage::handleLoginClicked() {
         return;
     }
 
-    // 나중에 DBManager로 대체 예정!
-    if (email == "test@example.com" && password == "1234") {
-        emit loginSuccess();
+    if (DBManager::instance().isValidUser(email, password)) {
+        emit loginSuccess();  // 로그인 성공 시 MainWindow로 이동
     } else {
         QMessageBox::critical(this, "로그인 실패", "이메일/비밀번호가 일치하지 않습니다.");
     }

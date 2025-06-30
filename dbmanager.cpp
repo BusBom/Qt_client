@@ -4,7 +4,7 @@
 #include <QVariant>
 #include <QDebug>
 
-DBManager::DBManager(QObject *parent) : QObject(parent) {
+DBManager::DBManager() {
     db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName("user.db");
 
@@ -14,6 +14,11 @@ DBManager::DBManager(QObject *parent) : QObject(parent) {
         qDebug() << "데이터베이스 연결 성공!";
         init();
     }
+}
+
+DBManager& DBManager::instance() {
+    static DBManager instance;
+    return instance;
 }
 
 void DBManager::init() {
@@ -30,6 +35,13 @@ void DBManager::init() {
     }
 }
 
+bool DBManager::connectToDatabase() {
+    if (!db.isOpen()) {
+        return db.open();
+    }
+    return true;
+}
+
 bool DBManager::addUser(const QString &email, const QString &password) {
     QSqlQuery query;
     query.prepare("INSERT INTO users (email, password) VALUES (?, ?)");
@@ -43,7 +55,7 @@ bool DBManager::addUser(const QString &email, const QString &password) {
     return true;
 }
 
-bool DBManager::isUserValid(const QString &email, const QString &password) {
+bool DBManager::isValidUser(const QString &email, const QString &password) {
     QSqlQuery query;
     query.prepare("SELECT * FROM users WHERE email = ? AND password = ?");
     query.addBindValue(email);

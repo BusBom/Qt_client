@@ -1,4 +1,5 @@
 #include "signuppage.h"
+#include "dbmanager.h"
 #include <QVBoxLayout>
 #include <QLineEdit>
 #include <QPushButton>
@@ -125,29 +126,10 @@ void SignUpPage::handleSignUpClicked() {
         return;
     }
 
-    QMessageBox msgBox(this);
-    msgBox.setWindowTitle("가입 완료");
-    msgBox.setText("가입완료");
-    msgBox.setIcon(QMessageBox::Information);
-    msgBox.setStyleSheet(R"(
-        QMessageBox {
-            background-color: white;
-        }
-        QLabel {
-            background-color: transparent;
-            color: black;
-            font-size: 14px;
-        }
-        QPushButton {
-            background-color: #f28b40;
-            color: white;
-            border-radius: 10px;
-            padding: 5px 10px;
-            font-weight: bold;
-            min-width: 60px;
-        }
-    )");
-    msgBox.exec();
-
-    emit switchToLoginPage();
+    if (DBManager::instance().addUser(email, password)) {
+        QMessageBox::information(this, "가입 완료", "가입이 완료되었습니다!");
+        emit switchToLoginPage();
+    } else {
+        QMessageBox::critical(this, "가입 실패", "이미 존재하는 이메일입니다!");
+    }
 }

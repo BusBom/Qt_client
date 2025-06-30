@@ -5,6 +5,7 @@ project(Busbomproject LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network LinguistTools)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Sql)
 
 qt_standard_project_setup()
 
@@ -22,6 +23,8 @@ qt_add_executable(Busbomproject
     signuppage.h signuppage.cpp
     dbmanager.h dbmanager.cpp
 )
+
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Sql)
 
 qt_add_translations(
     TARGETS Busbomproject
