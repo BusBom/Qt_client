@@ -10,7 +10,11 @@
 LoginPage::LoginPage(QWidget *parent) : QWidget(parent) {
 
     // 전체 배경
-    this->setStyleSheet("background-color: #1e1e1e;");
+    //this->setStyleSheet("background-color: #1e1e1e;");
+    QPalette pal = this->palette();
+    pal.setColor(QPalette::Window, QColor("#1e1e1e"));  // 원하는 배경색
+    this->setAutoFillBackground(true);
+    this->setPalette(pal);
     this->setFixedSize(1280, 720);
 
     // ✅ 흰색 프레임

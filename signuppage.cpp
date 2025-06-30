@@ -10,7 +10,10 @@
 
 SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     // 배경 다크모드
-    this->setStyleSheet("background-color: #1e1e1e;");
+    QPalette pal = this->palette();
+    pal.setColor(QPalette::Window, QColor("#1e1e1e"));  // 원하는 배경색
+    this->setAutoFillBackground(true);
+    this->setPalette(pal);
     this->setFixedSize(1280, 720);
 
     // 흰색 카드 박스
@@ -34,6 +37,13 @@ SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     passwordInput->setPlaceholderText("비밀번호를 입력해주세요.");
     passwordInput->setEchoMode(QLineEdit::Password);
     passwordInput->setStyleSheet("background-color: #f5f7fa; padding: 10px; border: none;");
+
+    QLabel *passwordConfrimLabel = new QLabel("Rewrite Password");
+    passwordLabel->setStyleSheet("font-size: 12px; color: #555;");
+    passwordConfirmInput = new QLineEdit();
+    passwordConfirmInput->setPlaceholderText("비밀번호를 다시 입력해주세요.");
+    passwordConfirmInput->setEchoMode(QLineEdit::Password);
+    passwordConfirmInput->setStyleSheet("background-color: #f5f7fa; padding: 10px; border: none;");
 
     signUpBtn = new QPushButton("SIGN UP");
     signUpBtn->setFixedHeight(40);
@@ -71,12 +81,14 @@ SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     formLayout->addWidget(emailInput);
     formLayout->addWidget(passwordLabel);
     formLayout->addWidget(passwordInput);
+    formLayout->addWidget(passwordConfrimLabel);
+    formLayout->addWidget(passwordConfirmInput);
     formLayout->addSpacing(10);
     formLayout->addWidget(signUpBtn);
     formLayout->addSpacing(15);
     formLayout->addWidget(divider);
     formLayout->addWidget(loginLink);
-    formLayout->setContentsMargins(30, 20, 30, 20);
+    formLayout->setContentsMargins(20, 8, 20, 8);
     formLayout->setAlignment(Qt::AlignCenter);
     whiteBox->setLayout(formLayout);
 
