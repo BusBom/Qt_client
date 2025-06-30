@@ -23,6 +23,7 @@ private slots:
 private:
     QLineEdit *emailInput;
     QLineEdit *passwordInput;
+    QLineEdit *passwordConfirmInput;
     QPushButton *signUpBtn;
     QLabel *loginLink;
 };
