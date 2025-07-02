@@ -10,6 +10,11 @@
 #include <QFrame>
 #include <QSpacerItem>
 #include <QStyle>
+#include <QComboBox>
+#include <QTimer>
+#include <QThread>
+#include <QCoreApplication>
+#include <opencv2/opencv.hpp>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -119,9 +124,15 @@ void MainWindow::setupUI() {
     topWidget->setLayout(topLayout);
 
     // ✅ stream frame 만들기
-    QLabel *streamTitle = new QLabel("📺 Live Stream");
+    QLabel *streamTitle = new QLabel("📺");
     streamTitle->setStyleSheet("font-size: 18px; color: white;");
-    streamTitle->setAlignment(Qt::AlignLeft);  //여기 추가
+    streamTitle->setAlignment(Qt::AlignLeft);
+
+    QComboBox *streamModeSelector = new QComboBox(this);  // ✅ 드롭다운 추가
+    streamModeSelector->addItem("Live Stream");
+    streamModeSelector->addItem("Recorded Video");
+    streamModeSelector->setStyleSheet("font-size: 13px; background-color: #313131; color: white; padding: 2px 8px;");
+
 
     QLabel *streamArea = new QLabel(this);
     streamArea->setFixedSize(800, 450);
@@ -134,6 +145,7 @@ void MainWindow::setupUI() {
     titleLayout->setContentsMargins(0, 0, 0, 0);
     titleLayout->addSpacing(5);  // ✅ streamArea 안쪽 여백 맞추기용
     titleLayout->addWidget(streamTitle);
+    titleLayout->addWidget(streamModeSelector);
     titleLayout->addStretch();
 
     // ✅ stream 전체 묶는 수직 레이아웃
@@ -148,6 +160,15 @@ void MainWindow::setupUI() {
     streamFrame->setFixedSize(830, 510);  // 버스 프레임과 높이 통일
     streamFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 20px;");
     streamFrame->setLayout(streamLayout);
+
+    // 🎥 드롭다운 이벤트 연결 추가 예정
+    connect(streamModeSelector, &QComboBox::currentTextChanged, this, [=](const QString &mode){
+        if (mode == "Live Stream") {
+            // TODO: 라이브 스트림 함수 호출
+        } else if (mode == "Recorded Video") {
+            // TODO: playRecordedVideo("http://라즈베리파이주소/output.mp4") 호출
+        }
+    });
 
     // ✅ bus frame 그대로 유지
     QFrame *busFrame = new QFrame(this);

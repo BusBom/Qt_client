@@ -24,9 +24,10 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     autoConnectCheck = new QCheckBox("Auto Connect", this);
 
     QFormLayout *networkLayout = new QFormLayout;
-    networkLayout->addRow("API URL:", apiUrlEdit);
-    networkLayout->addRow("Port:", portEdit);
+    networkLayout->addRow("API URL :", apiUrlEdit);
+    networkLayout->addRow("Port :", portEdit);
     networkLayout->addRow(autoConnectCheck);
+
     QWidget *networkPage = new QWidget;
     networkPage->setLayout(networkLayout);
 

@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.19)
 project(Busbomproject LANGUAGES CXX)
 
-# ✅ Qt6 모듈 한 번에 묶기
+# ✅ Qt6 모듈 찾기
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network LinguistTools)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
+
+# ✅ OpenCV 추가
+set(OpenCV_DIR "C:/opencv/build")
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 qt_standard_project_setup()
 
@@ -37,7 +42,9 @@ target_link_libraries(Busbomproject
         Qt6::Gui
         Qt6::Widgets
         Qt6::Network
+        ${OpenCV_LIBS}     # ✅ OpenCV 라이브러리 연결
 )
+
 target_link_libraries(Busbomproject PRIVATE Qt6::Widgets)
 target_link_libraries(Busbomproject PRIVATE Qt6::Widgets)
 
