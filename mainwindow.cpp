@@ -15,6 +15,12 @@
 #include <QThread>
 #include <QCoreApplication>
 #include <opencv2/opencv.hpp>
+#include <QMediaPlayer>
+#include <QVideoWidget>
+#include <QPushButton>
+#include <QComboBox>
+#include <QMediaPlayer>   // 🔧 추가
+#include <QVideoWidget>   // 🔧 추가
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -128,10 +134,17 @@ void MainWindow::setupUI() {
     streamTitle->setStyleSheet("font-size: 18px; color: white;");
     streamTitle->setAlignment(Qt::AlignLeft);
 
-    QComboBox *streamModeSelector = new QComboBox(this);  // ✅ 드롭다운 추가
-    streamModeSelector->addItem("Live Stream");
-    streamModeSelector->addItem("Recorded Video");
-    streamModeSelector->setStyleSheet("font-size: 13px; background-color: #313131; color: white; padding: 2px 8px;");
+    streamSelector = new QComboBox(this);
+    streamSelector->addItem("Live Stream");
+    streamSelector->addItem("Recorded Video");
+    streamSelector->setStyleSheet("font-size: 13px; background-color: #313131; color: white; padding: 2px 8px;");
+
+    videoWidget = new QVideoWidget(this);
+    videoWidget->setFixedSize(800, 450);
+    videoWidget->hide();  // 처음엔 숨김
+
+    mediaPlayer = new QMediaPlayer(this);
+    mediaPlayer->setVideoOutput(videoWidget);
 
 
     QLabel *streamArea = new QLabel(this);
@@ -145,7 +158,7 @@ void MainWindow::setupUI() {
     titleLayout->setContentsMargins(0, 0, 0, 0);
     titleLayout->addSpacing(5);  // ✅ streamArea 안쪽 여백 맞추기용
     titleLayout->addWidget(streamTitle);
-    titleLayout->addWidget(streamModeSelector);
+    titleLayout->addWidget(streamSelector);
     titleLayout->addStretch();
 
     // ✅ stream 전체 묶는 수직 레이아웃
@@ -153,24 +166,31 @@ void MainWindow::setupUI() {
     streamLayout->setAlignment(Qt::AlignVCenter);  // ✅ 중앙 정렬
     streamLayout->addLayout(titleLayout);
     streamLayout->addSpacing(5);
-    streamLayout->addWidget(streamArea, 0, Qt::AlignHCenter);
-
+    streamLayout->addWidget(streamArea, 0, Qt::AlignHCenter);      // 기본 QLabel
+    streamLayout->addWidget(videoWidget, 0, Qt::AlignHCenter);     // 영상 위젯
 
     QFrame *streamFrame = new QFrame(this);
     streamFrame->setFixedSize(830, 510);  // 버스 프레임과 높이 통일
     streamFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 20px;");
     streamFrame->setLayout(streamLayout);
 
-    // 🎥 드롭다운 이벤트 연결 추가 예정
-    connect(streamModeSelector, &QComboBox::currentTextChanged, this, [=](const QString &mode){
+    // 수정됨: 드롭다운에서 Recorded Video 선택 시 자동 재생
+    connect(streamSelector, &QComboBox::currentTextChanged, this, [=](const QString &mode){
         if (mode == "Live Stream") {
-            // TODO: 라이브 스트림 함수 호출
+            videoWidget->hide();
+            streamArea->show();
         } else if (mode == "Recorded Video") {
-            // TODO: playRecordedVideo("http://라즈베리파이주소/output.mp4") 호출
+            streamArea->hide();
+            videoWidget->show();
+
+            // ✅ 자동 재생
+            QString videoPath = "http://192.168.0.49/videos/output.mp4";  // 라즈베리파이 주소
+            mediaPlayer->setSource(QUrl(videoPath));
+            mediaPlayer->play();
         }
     });
 
-    // ✅ bus frame 그대로 유지
+    // ✅ bus frame
     QFrame *busFrame = new QFrame(this);
     busFrame->setFixedSize(385, 510);
     busFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 20px;");
@@ -281,6 +301,14 @@ void MainWindow::updateConnectionStatus() {
 void MainWindow::fetchBusData() {
     // TODO: API 통신 구현 예정
 }
+
+
+void MainWindow::playRecordedVideo() {
+    QString videoPath = "http://192.168.0.49/videos/output.mp4"; // 실제 URL로 바꾸기
+    mediaPlayer->setSource(QUrl(videoPath));
+    mediaPlayer->play();
+}
+
 
 MainWindow::~MainWindow() {
     delete ui;

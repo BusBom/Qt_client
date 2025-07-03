@@ -8,6 +8,8 @@
 #include <QTableWidget>
 #include <QTimer>
 #include <QNetworkAccessManager>
+#include <QMediaPlayer>
+#include <QVideoWidget>
 
 #include "settingsdialog.h"
 
@@ -28,6 +30,7 @@ private slots:
     void onStopChanged(int index);
     void updateConnectionStatus();
     void fetchBusData();
+    void playRecordedVideo();
 
 private:
     const QString PATH = QCoreApplication::applicationDirPath();
@@ -45,6 +48,10 @@ private:
 
     void setupUI();
     void setupConnections();
+
+    QMediaPlayer *mediaPlayer;
+    QVideoWidget *videoWidget;
+    QComboBox *streamSelector;
 };
 
 #endif // MAINWINDOW_H

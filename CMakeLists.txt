@@ -6,6 +6,8 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network LinguistTools)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
+find_package(Qt6 REQUIRED COMPONENTS Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS MultimediaWidgets)
 
 # ✅ OpenCV 추가
 set(OpenCV_DIR "C:/opencv/build")
@@ -43,6 +45,8 @@ target_link_libraries(Busbomproject
         Qt6::Widgets
         Qt6::Network
         ${OpenCV_LIBS}     # ✅ OpenCV 라이브러리 연결
+        Qt6::Multimedia
+        Qt6::MultimediaWidgets
 )
 
 target_link_libraries(Busbomproject PRIVATE Qt6::Widgets)
