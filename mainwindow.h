@@ -46,6 +46,12 @@ private:
     QTimer *pollTimer;
     QNetworkAccessManager *networkManager;
 
+    // ✅ [추가] 실시간 버스 정보 출력 테이블
+    QTableWidget *infoTable;
+
+    // ✅ [추가] 버스 정보 갱신 타이머
+    QTimer *busTimer;
+
     void setupUI();
     void setupConnections();
 

@@ -17,10 +17,15 @@
 #include <opencv2/opencv.hpp>
 #include <QMediaPlayer>
 #include <QVideoWidget>
+#include <QNetworkAccessManager>
 #include <QPushButton>
 #include <QComboBox>
-#include <QMediaPlayer>   // 🔧 추가
-#include <QVideoWidget>   // 🔧 추가
+#include <QMediaPlayer>
+#include <QVideoWidget>
+#include <QJsonDocument>  // ✅ 추가
+#include <QJsonObject>    // ✅ 추가
+#include <QJsonArray>     // ✅ 추가
+#include <QNetworkReply>  // ✅ 추가
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -39,16 +44,18 @@ MainWindow::MainWindow(QWidget *parent)
     pollTimer = new QTimer(this);
     connect(pollTimer, &QTimer::timeout, this, &MainWindow::updateConnectionStatus);
     pollTimer->start(3000);
+
+    // ✅ 버스 정보 실시간 갱신용 타이머
+    busTimer = new QTimer(this);
+    connect(busTimer, &QTimer::timeout, this, &MainWindow::fetchBusData);
+    busTimer->start(1000);
 }
 
 void MainWindow::setupUI() {
     // 🚍 Title + Icon
     QLabel *titleImgLabel = new QLabel("<img src='" + PATH + "/images/bus_face.png' width=32 height=32>");
-    //titleImgLabel->setAlignment(Qt::AlignLeft);
     QLabel *titleTextLabel = new QLabel("<b style='font-size:25px; color: white;'> Live Dashboard</b>");
     titleTextLabel->setContentsMargins(0, 0, 0, 2);
-    //titleTextLabel->setStyleSheet("color: white;");
-    //titleTextLabel->setAlignment(Qt::AlignLeft);
 
     stopSelector = new QComboBox(this);
     stopSelector->setStyleSheet(R"(
@@ -129,7 +136,7 @@ void MainWindow::setupUI() {
     QWidget *topWidget = new QWidget(this);
     topWidget->setLayout(topLayout);
 
-    // ✅ stream frame 만들기
+    // stream frame
     QLabel *streamTitle = new QLabel("📺");
     streamTitle->setStyleSheet("font-size: 18px; color: white;");
     streamTitle->setAlignment(Qt::AlignLeft);
@@ -141,7 +148,7 @@ void MainWindow::setupUI() {
 
     videoWidget = new QVideoWidget(this);
     videoWidget->setFixedSize(800, 450);
-    videoWidget->hide();  // 처음엔 숨김
+    videoWidget->hide();
 
     mediaPlayer = new QMediaPlayer(this);
     mediaPlayer->setVideoOutput(videoWidget);
@@ -153,24 +160,23 @@ void MainWindow::setupUI() {
     streamArea->setAlignment(Qt::AlignCenter);
     streamArea->setText("<font color='gray'>영상 스트리밍 출력</font>");
 
-    // ✅ streamTitle 왼쪽 정렬을 streamArea에 맞추기
     QHBoxLayout *titleLayout = new QHBoxLayout;
     titleLayout->setContentsMargins(0, 0, 0, 0);
-    titleLayout->addSpacing(5);  // ✅ streamArea 안쪽 여백 맞추기용
+    titleLayout->addSpacing(5);
     titleLayout->addWidget(streamTitle);
     titleLayout->addWidget(streamSelector);
     titleLayout->addStretch();
 
-    // ✅ stream 전체 묶는 수직 레이아웃
+    // stream 전체 묶는 수직 레이아웃
     QVBoxLayout *streamLayout = new QVBoxLayout;
-    streamLayout->setAlignment(Qt::AlignVCenter);  // ✅ 중앙 정렬
+    streamLayout->setAlignment(Qt::AlignVCenter);
     streamLayout->addLayout(titleLayout);
     streamLayout->addSpacing(5);
-    streamLayout->addWidget(streamArea, 0, Qt::AlignHCenter);      // 기본 QLabel
-    streamLayout->addWidget(videoWidget, 0, Qt::AlignHCenter);     // 영상 위젯
+    streamLayout->addWidget(streamArea, 0, Qt::AlignHCenter);
+    streamLayout->addWidget(videoWidget, 0, Qt::AlignHCenter);
 
     QFrame *streamFrame = new QFrame(this);
-    streamFrame->setFixedSize(830, 510);  // 버스 프레임과 높이 통일
+    streamFrame->setFixedSize(830, 510);
     streamFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 20px;");
     streamFrame->setLayout(streamLayout);
 
@@ -183,14 +189,14 @@ void MainWindow::setupUI() {
             streamArea->hide();
             videoWidget->show();
 
-            // ✅ 자동 재생
+            // 자동 재생
             QString videoPath = "http://192.168.0.49/videos/output.mp4";  // 라즈베리파이 주소
             mediaPlayer->setSource(QUrl(videoPath));
             mediaPlayer->play();
         }
     });
 
-    // ✅ bus frame
+    // bus frame
     QFrame *busFrame = new QFrame(this);
     busFrame->setFixedSize(385, 510);
     busFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 20px;");
@@ -220,7 +226,7 @@ void MainWindow::setupUI() {
     QVBoxLayout *busFrameLayout = new QVBoxLayout(busFrame);
     busFrameLayout->setAlignment(Qt::AlignTop);
 
-    QTableWidget *infoTable = new QTableWidget(4, 2, busFrame);
+    infoTable = new QTableWidget(4, 2, busFrame);
     infoTable->setFixedSize(320, 360);
     infoTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     infoTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -299,9 +305,52 @@ void MainWindow::updateConnectionStatus() {
 }
 
 void MainWindow::fetchBusData() {
-    // TODO: API 통신 구현 예정
-}
+    QNetworkRequest request(QUrl("http://192.168.0.76/cgi-bin/sequence.cgi"));
+    QNetworkReply *reply = networkManager->get(request);
 
+    connect(reply, &QNetworkReply::finished, this, [=]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray response = reply->readAll();
+            QJsonParseError parseError;
+            QJsonDocument doc = QJsonDocument::fromJson(response, &parseError);
+
+            if (doc.isNull()) {
+                reply->deleteLater();
+                return;
+            }
+
+            if (!doc.isObject()) {
+                reply->deleteLater();
+                return;
+            }
+
+            QJsonObject rootObj = doc.object();
+            QJsonArray sequence = rootObj["sequence"].toArray();
+
+            for (int row = 0; row < 4; ++row) {
+                QLabel *cell = qobject_cast<QLabel *>(infoTable->cellWidget(row, 0));
+                if (cell) {
+                    cell->setText("");
+                }
+            }
+
+            for (const QJsonValue &val : sequence) {
+                QJsonObject obj = val.toObject();
+                int platform = obj["platform"].toInt();
+                QString busNum = obj["busNumber"].toString();
+                int row = 4 - platform;
+
+                if (row >= 0 && row < 4) {
+                    QLabel *cell = qobject_cast<QLabel *>(infoTable->cellWidget(row, 0));
+                    if (cell) {
+                        cell->setText(busNum);
+                    }
+                }
+            }
+        }
+        reply->deleteLater();
+    });
+}
 
 void MainWindow::playRecordedVideo() {
     QString videoPath = "http://192.168.0.49/videos/output.mp4"; // 실제 URL로 바꾸기
