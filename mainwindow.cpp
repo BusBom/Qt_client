@@ -22,10 +22,10 @@
 #include <QComboBox>
 #include <QMediaPlayer>
 #include <QVideoWidget>
-#include <QJsonDocument>  // ✅ 추가
-#include <QJsonObject>    // ✅ 추가
-#include <QJsonArray>     // ✅ 추가
-#include <QNetworkReply>  // ✅ 추가
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QNetworkReply>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -41,14 +41,67 @@ MainWindow::MainWindow(QWidget *parent)
 
     settingsDlg = new SettingsDialog(this);
     networkManager = new QNetworkAccessManager(this);
+    /*
     pollTimer = new QTimer(this);
     connect(pollTimer, &QTimer::timeout, this, &MainWindow::updateConnectionStatus);
     pollTimer->start(3000);
+    */
+
+    // ✅ SettingsDialog 시그널 연결
+    connect(settingsDlg, &SettingsDialog::configUpdated, this, [=]() {
+        // ✅ 네트워크 설정 반영
+        apiUrlBase = settingsDlg->getApiUrl();
+        apiPort = settingsDlg->getPort();
+        autoConnect = settingsDlg->getAutoConnect();
+    });
+
+    connect(settingsDlg, &SettingsDialog::cameraConfigUpdateRequested, this, [=](int brightness, int contrast, int exposure, int saturation) {
+        // ✅ 카메라 설정 서버 전송
+        QJsonObject cameraObj;
+        cameraObj["brightness"] = brightness;
+        cameraObj["contrast"] = contrast;
+        cameraObj["exposure"] = exposure;
+        cameraObj["saturation"] = saturation;
+
+        QJsonObject body;
+        body["camera"] = cameraObj;
+
+        QNetworkRequest request(QUrl("http://192.168.0.76/cgi-bin/config.cgi"));
+        request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+        QNetworkReply *reply = networkManager->post(request, QJsonDocument(body).toJson());
+
+        connect(reply, &QNetworkReply::finished, this, [=]() {
+            QByteArray response = reply->readAll();
+            qDebug() << "📷 카메라 설정 응답:" << response;  // ✅ 로그 추가
+
+            QJsonDocument doc = QJsonDocument::fromJson(response);
+            if (!doc.isNull() && doc.isObject()) {
+                QJsonObject resCam = doc.object().value("camera").toObject();
+                settingsDlg->setBrightness(resCam.value("brightness").toInt());
+                settingsDlg->setContrast(resCam.value("contrast").toInt());
+                settingsDlg->setExposure(resCam.value("exposure").toInt());
+                settingsDlg->setSaturation(resCam.value("saturation").toInt());
+
+                // ✅ 설정 반영 확인용 로그도 추가!
+                qDebug() << "✅ 설정 반영됨 -> 밝기:" << resCam.value("brightness").toInt()
+                         << ", 명암:" << resCam.value("contrast").toInt()
+                         << ", 노출:" << resCam.value("exposure").toInt()
+                         << ", 채도:" << resCam.value("saturation").toInt();
+            }
+            reply->deleteLater();
+        });
+    });
 
     // ✅ 버스 정보 실시간 갱신용 타이머
     busTimer = new QTimer(this);
     connect(busTimer, &QTimer::timeout, this, &MainWindow::fetchBusData);
     busTimer->start(1000);
+
+    // ✅ 기본값 초기화
+    apiUrlBase = "http://192.168.0.76/cgi-bin/sequence.cgi";
+    apiPort = 80;
+    autoConnect = false;
 }
 
 void MainWindow::setupUI() {
@@ -266,7 +319,7 @@ void MainWindow::setupUI() {
     busFrameLayout->addWidget(infoTable, 0, Qt::AlignHCenter);
     busFrameLayout->addSpacing(0);
 
-    // ⬅ 중단 중앙 레이아웃
+    // 중단 중앙 레이아웃
     QHBoxLayout *middleLayout = new QHBoxLayout;
     middleLayout->addWidget(streamFrame);
     middleLayout->addSpacing(20);
@@ -298,19 +351,31 @@ void MainWindow::onStopChanged(int index) {
     Q_UNUSED(index)
 }
 
+/*
 void MainWindow::updateConnectionStatus() {
     statusRpi->setText("Server: 🟢");
     statusCam->setText("Camera: 🟢");
     statusStm32->setText("Display: 🟢");
-}
+}*/
 
 void MainWindow::fetchBusData() {
+    qDebug() << " fetchBusData() 진입. 현재 apiUrlBase:" << apiUrlBase;
+
+    /*
     QNetworkRequest request(QUrl("http://192.168.0.76/cgi-bin/sequence.cgi"));
+    QNetworkReply *reply = networkManager->get(request);
+    */
+
+    QUrl url(apiUrlBase);
+    url.setPort(apiPort);  // ✅ 포트 추가!!!
+    QNetworkRequest request(url);
     QNetworkReply *reply = networkManager->get(request);
 
     connect(reply, &QNetworkReply::finished, this, [=]() {
         if (reply->error() == QNetworkReply::NoError) {
             QByteArray response = reply->readAll();
+            qDebug() << "🎥 서버 응답: " << response;
+
             QJsonParseError parseError;
             QJsonDocument doc = QJsonDocument::fromJson(response, &parseError);
 
@@ -325,6 +390,41 @@ void MainWindow::fetchBusData() {
             }
 
             QJsonObject rootObj = doc.object();
+
+            // ✅ online 상태값을 UI에 반영
+            QJsonArray online = rootObj["online"].toArray();
+            if (online.size() == 3) {
+                auto updateLabelStatus = [this](QLabel* label, int status) {
+                    QString icon;
+                    QString color;
+                    QString name;
+
+                    if (label == statusRpi) name = "Server";
+                    else if (label == statusCam) name = "Camera";
+                    else if (label == statusStm32) name = "Display";
+
+                    if (status == 1) {         // ✅ 정상
+                        icon = "🟢";
+                        color = "limegreen";
+                    } else if (status == 2) {  // ✅ 점검필요
+                        icon = "🔴";
+                        color = "red";
+                    } else {                   // ✅ 오프라인
+                        icon = "⚫";
+                        color = "black";
+                    }
+
+                    QString labelText = "<span style='color:white'>" + name + "</span> " +
+                                        "<span style='color:" + color + "'>" + icon + "</span>";
+                    label->setText(labelText);
+                    label->setStyleSheet("background-color: #313131;");
+                };
+
+                updateLabelStatus(statusRpi, online[0].toInt());    // 라즈베리파이 상태
+                updateLabelStatus(statusCam, online[1].toInt());    // 카메라 상태
+                updateLabelStatus(statusStm32, online[2].toInt());  // STM32 상태
+            }
+
             QJsonArray sequence = rootObj["sequence"].toArray();
 
             for (int row = 0; row < 4; ++row) {

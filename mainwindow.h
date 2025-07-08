@@ -28,7 +28,7 @@ public:
 private slots:
     void onSettingsClicked();
     void onStopChanged(int index);
-    void updateConnectionStatus();
+    //void updateConnectionStatus();
     void fetchBusData();
     void playRecordedVideo();
 
@@ -46,18 +46,25 @@ private:
     QTimer *pollTimer;
     QNetworkAccessManager *networkManager;
 
-    // ✅ [추가] 실시간 버스 정보 출력 테이블
+    // ✅ 실시간 버스 정보 출력 테이블
     QTableWidget *infoTable;
 
-    // ✅ [추가] 버스 정보 갱신 타이머
+    // ✅ 버스 정보 갱신 타이머
     QTimer *busTimer;
+
+    // ✅ Stream 관련
+    QMediaPlayer *mediaPlayer;
+    QVideoWidget *videoWidget;
+    QComboBox *streamSelector;
 
     void setupUI();
     void setupConnections();
 
-    QMediaPlayer *mediaPlayer;
-    QVideoWidget *videoWidget;
-    QComboBox *streamSelector;
+    // ✅ [추가] 네트워크 설정 저장용 변수
+    QString apiUrlBase;
+    quint16 apiPort;
+    bool autoConnect;
 };
 
 #endif // MAINWINDOW_H
+

@@ -8,6 +8,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
 find_package(Qt6 REQUIRED COMPONENTS Multimedia)
 find_package(Qt6 REQUIRED COMPONENTS MultimediaWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Network)
 
 # ✅ OpenCV 추가
 set(OpenCV_DIR "C:/opencv/build")
@@ -51,6 +52,7 @@ target_link_libraries(Busbomproject
 
 target_link_libraries(Busbomproject PRIVATE Qt6::Widgets)
 target_link_libraries(Busbomproject PRIVATE Qt6::Widgets)
+target_link_libraries(Busbomproject PRIVATE Qt6::Network)
 
 include(GNUInstallDirs)
 

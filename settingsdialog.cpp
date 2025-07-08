@@ -3,6 +3,11 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QListWidget>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -135,6 +140,15 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     setLayout(mainLayout);
     setWindowTitle("Settings");
     resize(600, 400);  // 기본 크기 설정
+
+    // 설정 복원용 값 저장
+    originalApiUrl = apiUrlEdit->text();
+    originalPort = portEdit->text().toUInt();
+    originalAutoConnect = autoConnectCheck->isChecked();
+    originalBrightness = brightnessSlider->value();
+    originalContrast = contrastSlider->value();
+    originalExposure = exposureSlider->value();
+    originalSaturation = saturationSlider->value();
 }
 
 void SettingsDialog::onPageChanged(int index) {
@@ -146,14 +160,31 @@ void SettingsDialog::onPageChanged(int index) {
 }
 
 void SettingsDialog::onUpdateClicked() {
-    // TODO: 실제 설정 저장 & 서버로 전송
-    emit configUpdated();
+    if (stackedPages->currentIndex() == 0) {
+        emit configUpdated();
+    } else if (stackedPages->currentIndex() == 1) {
+        emit cameraConfigUpdateRequested(
+            brightnessSlider->value(),
+            contrastSlider->value(),
+            exposureSlider->value(),
+            saturationSlider->value()
+            );
+    }
     accept();
 }
 
 void SettingsDialog::onCancelClicked() {
-    // TODO: 창 닫기
-    accept();
+    // 설정 복원
+    apiUrlEdit->setText(originalApiUrl);
+    portEdit->setText(QString::number(originalPort));
+    autoConnectCheck->setChecked(originalAutoConnect);
+
+    brightnessSlider->setValue(originalBrightness);
+    contrastSlider->setValue(originalContrast);
+    exposureSlider->setValue(originalExposure);
+    saturationSlider->setValue(originalSaturation);
+
+    reject();
 }
 
 
@@ -214,3 +245,31 @@ void ClickableSlider::paintEvent(QPaintEvent *event)
 
     painter.drawText(QRect(textX, textY, 30, 20), Qt::AlignRight, valueText);
 }
+
+// ✅ 네트워크 설정 getter
+QString SettingsDialog::getApiUrl() const {
+    return apiUrlEdit->text();
+}
+
+quint16 SettingsDialog::getPort() const {
+    return portEdit->text().toUShort();
+}
+
+bool SettingsDialog::getAutoConnect() const {
+    return autoConnectCheck->isChecked();
+}
+
+// ✅ 카메라 설정 setter
+void SettingsDialog::setBrightness(int value) {
+    brightnessSlider->setValue(value);
+}
+void SettingsDialog::setContrast(int value) {
+    contrastSlider->setValue(value);
+}
+void SettingsDialog::setExposure(int value) {
+    exposureSlider->setValue(value);
+}
+void SettingsDialog::setSaturation(int value) {
+    saturationSlider->setValue(value);
+}
+
