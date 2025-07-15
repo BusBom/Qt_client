@@ -104,6 +104,29 @@ MainWindow::MainWindow(QWidget *parent)
     autoConnect = false;
 }
 
+void MainWindow::startLiveStream() {
+    QString rtspUrl = "rtsp://192.168.0.62:554/profile2/media.smp";  // 🔁 이 주소 사용
+    if (!cap.open(rtspUrl.toStdString())) {
+        qDebug() << "❌ RTSP 열기 실패";
+        return;
+    }
+
+    frameTimer = new QTimer(this);
+    connect(frameTimer, &QTimer::timeout, this, [=]() {
+        cv::Mat frame;
+        if (cap.read(frame)) {
+            cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+            QImage img(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
+            QPixmap pixmap = QPixmap::fromImage(img).scaled(streamArea->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            streamArea->setPixmap(pixmap);
+        } else {
+            qDebug() << "⚠️ 프레임 수신 실패";
+        }
+    });
+    frameTimer->start(33);  // 약 30fps
+}
+
+
 void MainWindow::setupUI() {
     // 🚍 Title + Icon
     QLabel *titleImgLabel = new QLabel("<img src='" + PATH + "/images/bus_face.png' width=32 height=32>");
@@ -207,7 +230,7 @@ void MainWindow::setupUI() {
     mediaPlayer->setVideoOutput(videoWidget);
 
 
-    QLabel *streamArea = new QLabel(this);
+    streamArea = new QLabel(this);
     streamArea->setFixedSize(800, 450);
     streamArea->setStyleSheet("background-color: black; border: 2px solid #444; border-radius: 0px;");
     streamArea->setAlignment(Qt::AlignCenter);
@@ -233,17 +256,25 @@ void MainWindow::setupUI() {
     streamFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 20px;");
     streamFrame->setLayout(streamLayout);
 
-    // 수정됨: 드롭다운에서 Recorded Video 선택 시 자동 재생
     connect(streamSelector, &QComboBox::currentTextChanged, this, [=](const QString &mode){
         if (mode == "Live Stream") {
             videoWidget->hide();
             streamArea->show();
+
+            if (!cap.isOpened()) {
+                startLiveStream();  // ✅ 실시간 스트리밍 시작
+            }
+
         } else if (mode == "Recorded Video") {
+            if (cap.isOpened()) {
+                frameTimer->stop();
+                cap.release();  // ✅ 스트리밍 중지
+            }
+
             streamArea->hide();
             videoWidget->show();
 
-            // 자동 재생
-            QString videoPath = "http://192.168.0.49/videos/output.mp4";  // 라즈베리파이 주소
+            QString videoPath = "http://192.168.0.20/videos/output.mp4";
             mediaPlayer->setSource(QUrl(videoPath));
             mediaPlayer->play();
         }
@@ -301,10 +332,10 @@ void MainWindow::setupUI() {
             QString platformText = "";
             if (col == 1) {
                 switch (row) {
-                case 0: platformText = "    P4"; break;
-                case 1: platformText = "    P3"; break;
-                case 2: platformText = "    P2"; break;
-                case 3: platformText = "    P1"; break;
+                case 0: platformText = "    P1"; break;
+                case 1: platformText = "    P2"; break;
+                case 2: platformText = "    P3"; break;
+                case 3: platformText = "    P4"; break;
                 }
                 style += "font-size: 18px; font-weight: bold;";
             }
@@ -438,7 +469,7 @@ void MainWindow::fetchBusData() {
                 QJsonObject obj = val.toObject();
                 int platform = obj["platform"].toInt();
                 QString busNum = obj["busNumber"].toString();
-                int row = 4 - platform;
+                int row = platform - 1;
 
                 if (row >= 0 && row < 4) {
                     QLabel *cell = qobject_cast<QLabel *>(infoTable->cellWidget(row, 0));
@@ -453,7 +484,7 @@ void MainWindow::fetchBusData() {
 }
 
 void MainWindow::playRecordedVideo() {
-    QString videoPath = "http://192.168.0.49/videos/output.mp4"; // 실제 URL로 바꾸기
+    QString videoPath = "http://192.168.0.20/videos/output.mp4"; // 실제 URL로 바꾸기
     mediaPlayer->setSource(QUrl(videoPath));
     mediaPlayer->play();
 }
@@ -461,4 +492,14 @@ void MainWindow::playRecordedVideo() {
 
 MainWindow::~MainWindow() {
     delete ui;
+
+    if (cap.isOpened()) {
+        frameTimer->stop();
+        cap.release();
+    }
+
+    if (frameTimer) {
+        frameTimer->stop();
+        frameTimer->deleteLater();
+    }
 }

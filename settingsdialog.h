@@ -1,6 +1,10 @@
 #ifndef SETTINGSDIALOG_H
 #define SETTINGSDIALOG_H
 
+#include <QLocalSocket>         // ✅ 소켓 관련 가장 위로
+#define SOCKET_PATH "/tmp/camera_socket"  // ✅ 소켓 경로 정의
+#include <QMediaPlayer>    // ✅ 영상 재생용
+#include <QVideoWidget>    // ✅ 영상 출력용
 #include <QDialog>
 #include <QLineEdit>
 #include <QCheckBox>
@@ -14,6 +18,11 @@
 #include <QStyleOptionSlider>
 #include <QPainter>
 #include <QSettings>   // ✅ 설정 저장용 추가
+#include <QLabel>
+#include <QNetworkAccessManager>
+#include <QVBoxLayout>
+#include <QLocalSocket>
+#define SOCKET_PATH "/tmp/camera_socket"
 
 class ClickableSlider : public QSlider
 {
@@ -84,6 +93,17 @@ private:
 
     QPushButton *updateBtn;
     QPushButton *cancelBtn;
+
+    // Camera settings
+    QLabel *originalFrame;               // 기존 영상 (JPEG 1장)
+    QVideoWidget *previewVideo;         // 변경 후 영상 스트리밍용
+    QMediaPlayer *previewPlayer;        // 영상 재생기
+    QPushButton *applyBtn;
+
+    QNetworkAccessManager *netManager;
+
+    QVBoxLayout *cameraLayoutContainer;
+    QLocalSocket *unixSocket;
 
     // ✅ Cancel 시 복원용 값 저장
     QString originalApiUrl;

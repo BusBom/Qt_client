@@ -1,4 +1,8 @@
 #include "settingsdialog.h"
+#include <QLocalSocket>               // ✅ 유닉스 도메인 소켓
+#define SOCKET_PATH "/tmp/camera_socket"  // ✅ 소켓 경로 정의
+#include <QMediaPlayer>       // ✅ 영상 재생용
+#include <QVideoWidget>       // ✅ 영상 표시용 위젯
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -12,6 +16,9 @@
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
 {
+    netManager = new QNetworkAccessManager(this);
+    unixSocket = new QLocalSocket(this);
+
     // 💡 왼쪽 사이드바
     pageSelector = new QListWidget(this);
     pageSelector->addItem("🌐 네트워크 설정");
@@ -35,6 +42,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     QWidget *networkPage = new QWidget;
     networkPage->setLayout(networkLayout);
+
 
     // 🎥 카메라 설정 페이지
     brightnessSlider = new ClickableSlider(Qt::Horizontal, this);
@@ -60,12 +68,81 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     cameraLayout->addRow("Exposure:", exposureSlider);
     cameraLayout->addRow("Saturation:", saturationSlider);
 
+    QWidget *formWrapper = new QWidget;
+    formWrapper->setLayout(cameraLayout);
+
+    applyBtn = new QPushButton("Apply");
+    applyBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px;");
+    applyBtn->setFixedSize(90, 25);
+
+    QHBoxLayout *applyLayout = new QHBoxLayout;  // ✅ Apply 버튼 오른쪽 정렬 배치
+    applyLayout->addStretch();
+    applyLayout->addWidget(applyBtn);
+    applyLayout->setContentsMargins(0, 5, 15, 5);
+
+    cameraLayoutContainer = new QVBoxLayout;
+
+    cameraLayoutContainer->addWidget(formWrapper);
+    cameraLayoutContainer->addLayout(applyLayout); // ✅ 슬라이더 바로 아래 오른쪽에 Apply 버튼 배치
+
+    originalFrame = new QLabel("원본 영상");
+    originalFrame->setFixedSize(320, 240);
+    originalFrame->setStyleSheet("background-color: black; border: 1px solid gray;");
+    originalFrame->setAlignment(Qt::AlignCenter);
+
+    previewVideo = new QVideoWidget;
+    previewVideo->setFixedSize(320, 240);
+    previewVideo->setStyleSheet("background-color: black; border: 1px solid gray;");
+    previewVideo->setAspectRatioMode(Qt::KeepAspectRatio);
+
+    previewPlayer = new QMediaPlayer(this);
+    previewPlayer->setVideoOutput(previewVideo);
+
+
+    QHBoxLayout *previewLayout = new QHBoxLayout;  // ✅ 두 프레임 나란히 동일 크기, 같은 높이 배치
+    previewLayout->addWidget(originalFrame);
+    previewLayout->addWidget(previewVideo);
+
+    cameraLayoutContainer->addLayout(previewLayout);
+
+    connect(applyBtn, &QPushButton::clicked, this, [=]() {
+        QJsonObject cameraObj;
+        cameraObj["brightness"] = brightnessSlider->value();
+        cameraObj["contrast"] = contrastSlider->value();
+        cameraObj["exposure"] = exposureSlider->value();
+        cameraObj["saturation"] = saturationSlider->value();
+        cameraObj["preview"] = true;
+
+        QJsonObject body;
+        body["camera"] = cameraObj;
+
+        QNetworkRequest request(QUrl("http://192.168.0.64/cgi-bin/config.cgi"));
+        request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+        QNetworkReply *reply = netManager->post(request, QJsonDocument(body).toJson());
+
+        connect(reply, &QNetworkReply::finished, this, [=]() {
+            reply->deleteLater();
+
+            // ✅ 실제 영상 스트림 주소로 수정 필요
+            QUrl previewStreamUrl("http://192.168.0.64/preview_stream");  // 예시 URL
+            previewPlayer->stop();   // 혹시 재생 중이면 중단
+            previewPlayer->setSource(previewStreamUrl);
+            previewPlayer->play();
+        });
+    });
+
+
     QWidget *cameraPage = new QWidget;
-    cameraPage->setLayout(cameraLayout);
+    cameraPage->setLayout(cameraLayoutContainer);
 
     // 🌙 절전모드 설정 페이지
     sleepStartEdit = new QTimeEdit(this);
     sleepEndEdit = new QTimeEdit(this);
+    sleepStartEdit->setDisplayFormat("HH:mm");
+    sleepEndEdit->setDisplayFormat("HH:mm");
+    sleepStartEdit->setTime(QTime::fromString("01:00", "HH:mm"));
+    sleepEndEdit->setTime(QTime::fromString("05:00", "HH:mm"));
 
     QFormLayout *sleepLayout = new QFormLayout;
     sleepLayout->addRow("절전모드 시작 시각:", sleepStartEdit);
@@ -73,59 +150,24 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     QWidget *sleepPage = new QWidget;
     sleepPage->setLayout(sleepLayout);
 
-    // ✅ Stacked Widget 페이지 등록
     stackedPages = new QStackedWidget(this);
-    stackedPages->addWidget(networkPage);  // index 0
-    stackedPages->addWidget(cameraPage);   // index 1
-    stackedPages->addWidget(sleepPage);    // index 2
-    stackedPages->addWidget(new QWidget()); // index 3 - 홈 (비워두기)
+    stackedPages->addWidget(networkPage);
+    stackedPages->addWidget(cameraPage);
+    stackedPages->addWidget(sleepPage);
+    stackedPages->addWidget(new QWidget());
 
-    // ⚙️ 업데이트 버튼
     updateBtn = new QPushButton("Update", this);
-    updateBtn->setStyleSheet(R"(
-        QPushButton {
-            background-color: #f37321;     /* 밝은 파란색 배경 */
-            color: white;                  /* 흰색 텍스트 */
-            border: 1px solid #303030;
-            border-radius: 10px;           /* 둥근 모서리 */
-            font-size: 13px;
-            padding: 5px;
-        }
-        QPushButton:hover {
-            background-color: #f89b6c;     /* 호버 시 진한 파랑 */
-        }
-        QPushButton:pressed {
-            background-color: #fbb584;     /* 눌렀을 때 더 진한 파랑 */
-        }
-    )");
+    updateBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px;");
     updateBtn->setFixedSize(90, 25);
     connect(updateBtn, &QPushButton::clicked, this, &SettingsDialog::onUpdateClicked);
 
-    //cancel
     cancelBtn = new QPushButton("Cancel", this);
-    cancelBtn->setStyleSheet(R"(
-        QPushButton {
-            background-color: #f37321;     /* 밝은 파란색 배경 */
-            color: white;                  /* 흰색 텍스트 */
-            border: 1px solid #303030;
-            border-radius: 10px;           /* 둥근 모서리 */
-            font-size: 13px;
-            padding: 5px;
-        }
-        QPushButton:hover {
-            background-color: #f89b6c;     /* 호버 시 진한 파랑 */
-        }
-        QPushButton:pressed {
-            background-color: #fbb584;     /* 눌렀을 때 더 진한 파랑 */
-        }
-    )");
+    cancelBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px;");
     cancelBtn->setFixedSize(90, 25);
     connect(cancelBtn, &QPushButton::clicked, this, &SettingsDialog::onCancelClicked);
 
     QVBoxLayout *rightLayout = new QVBoxLayout;
-
     QHBoxLayout *rightHLayout = new QHBoxLayout;
-    rightHLayout->setContentsMargins(8, 5, 8, 5);
     rightHLayout->addStretch();
     rightHLayout->addWidget(cancelBtn);
     rightHLayout->addWidget(updateBtn);
@@ -139,9 +181,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     setLayout(mainLayout);
     setWindowTitle("Settings");
-    resize(600, 400);  // 기본 크기 설정
+    resize(900, 600);
 
-    // 설정 복원용 값 저장
     originalApiUrl = apiUrlEdit->text();
     originalPort = portEdit->text().toUInt();
     originalAutoConnect = autoConnectCheck->isChecked();
@@ -156,6 +197,28 @@ void SettingsDialog::onPageChanged(int index) {
         this->close();  // 🏚 Home 선택 시 설정 창 닫기
     } else {
         stackedPages->setCurrentIndex(index);
+
+        if (index == 1) {
+            if (unixSocket->isOpen()) {
+                unixSocket->abort();  // 이전 연결 닫기
+            }
+
+            unixSocket->connectToServer(SOCKET_PATH);  // 경로는 #define으로 사용
+
+            QByteArray buffer;
+            connect(unixSocket, &QLocalSocket::readyRead, this, [=]() mutable {
+                buffer.append(unixSocket->readAll());
+                // JPEG 종료 마커 감지 (0xFF 0xD9)
+                if (buffer.contains("\xFF\xD9")) {
+                    QPixmap pix;
+                    pix.loadFromData(buffer);
+                    originalFrame->setPixmap(pix.scaled(originalFrame->size(), Qt::KeepAspectRatio));
+                    buffer.clear();
+                    unixSocket->disconnectFromServer();  // 한 번 수신 후 종료
+                }
+            });
+        }
+
     }
 }
 
@@ -272,4 +335,3 @@ void SettingsDialog::setExposure(int value) {
 void SettingsDialog::setSaturation(int value) {
     saturationSlider->setValue(value);
 }
-

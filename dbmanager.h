@@ -14,12 +14,12 @@ public:
 
 private:
     QSqlDatabase db;
-    DBManager(); // ✅ 기본 생성자만 있어야 함
+    DBManager();
 
     DBManager(const DBManager&) = delete;
     DBManager& operator=(const DBManager&) = delete;
 
-    void init();  // ✅ 이거 선언 필요했음!
+    void init();
 };
 
 #endif // DBMANAGER_H

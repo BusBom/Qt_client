@@ -10,6 +10,7 @@
 #include <QNetworkAccessManager>
 #include <QMediaPlayer>
 #include <QVideoWidget>
+#include <opencv2/opencv.hpp>
 
 #include "settingsdialog.h"
 
@@ -28,7 +29,6 @@ public:
 private slots:
     void onSettingsClicked();
     void onStopChanged(int index);
-    //void updateConnectionStatus();
     void fetchBusData();
     void playRecordedVideo();
 
@@ -56,9 +56,13 @@ private:
     QMediaPlayer *mediaPlayer;
     QVideoWidget *videoWidget;
     QComboBox *streamSelector;
+    cv::VideoCapture cap;
+    QTimer *frameTimer;
+    QLabel *streamArea;
 
     void setupUI();
     void setupConnections();
+    void startLiveStream();
 
     // ✅ [추가] 네트워크 설정 저장용 변수
     QString apiUrlBase;
@@ -67,4 +71,3 @@ private:
 };
 
 #endif // MAINWINDOW_H
-

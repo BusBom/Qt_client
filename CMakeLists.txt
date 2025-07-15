@@ -2,13 +2,16 @@ cmake_minimum_required(VERSION 3.19)
 project(Busbomproject LANGUAGES CXX)
 
 # ✅ Qt6 모듈 찾기
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network LinguistTools)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Sql)
-find_package(Qt6 REQUIRED COMPONENTS Multimedia)
-find_package(Qt6 REQUIRED COMPONENTS MultimediaWidgets)
-find_package(Qt6 REQUIRED COMPONENTS Network)
+find_package(Qt6 REQUIRED COMPONENTS
+    Core
+    Gui
+    Widgets
+    Network
+    Sql
+    Multimedia
+    MultimediaWidgets
+    LinguistTools
+)
 
 # ✅ OpenCV 추가
 set(OpenCV_DIR "C:/opencv/build")
@@ -32,8 +35,6 @@ qt_add_executable(Busbomproject
     dbmanager.h dbmanager.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Sql)
-
 qt_add_translations(
     TARGETS Busbomproject
     TS_FILES Busbomproject_ko_KR.ts
@@ -45,14 +46,11 @@ target_link_libraries(Busbomproject
         Qt6::Gui
         Qt6::Widgets
         Qt6::Network
-        ${OpenCV_LIBS}     # ✅ OpenCV 라이브러리 연결
+        Qt6::Sql
         Qt6::Multimedia
         Qt6::MultimediaWidgets
+        ${OpenCV_LIBS}     # ✅ OpenCV 라이브러리
 )
-
-target_link_libraries(Busbomproject PRIVATE Qt6::Widgets)
-target_link_libraries(Busbomproject PRIVATE Qt6::Widgets)
-target_link_libraries(Busbomproject PRIVATE Qt6::Network)
 
 include(GNUInstallDirs)
 
