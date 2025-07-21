@@ -367,12 +367,6 @@ void MainWindow::onStopChanged(int index) {
     Q_UNUSED(index)
 }
 
-/*
-void MainWindow::updateConnectionStatus() {
-    statusRpi->setText("Server: 🟢");
-    statusCam->setText("Camera: 🟢");
-    statusStm32->setText("Display: 🟢");
-}*/
 
 void MainWindow::fetchBusData() {
     qDebug() << " fetchBusData() 진입. 현재 apiUrlBase:" << apiUrlBase;

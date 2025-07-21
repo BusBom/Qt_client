@@ -1,10 +1,11 @@
 #ifndef SETTINGSDIALOG_H
 #define SETTINGSDIALOG_H
 
-#include <QLocalSocket>         // ✅ 소켓 관련 가장 위로
-#define SOCKET_PATH "/tmp/camera_socket"  // ✅ 소켓 경로 정의
-#include <QMediaPlayer>    // ✅ 영상 재생용
-#include <QVideoWidget>    // ✅ 영상 출력용
+#include <QLocalSocket>
+#define SOCKET_PATH "/tmp/camera_socket"
+
+#include <QMediaPlayer>
+#include <QVideoWidget>
 #include <QDialog>
 #include <QLineEdit>
 #include <QCheckBox>
@@ -17,10 +18,15 @@
 #include <QPaintEvent>
 #include <QStyleOptionSlider>
 #include <QPainter>
-#include <QSettings>   // ✅ 설정 저장용 추가
+#include <QSettings>
 #include <QLabel>
 #include <QNetworkAccessManager>
 #include <QVBoxLayout>
+#include <QVector>
+#include <QPoint>
+
+// ✅ ROI 설정용 커스텀 위젯
+#include "roi_frame.h"
 
 class ClickableSlider : public QSlider
 {
@@ -40,7 +46,7 @@ class SettingsDialog : public QDialog
 public:
     explicit SettingsDialog(QWidget *parent = nullptr);
 
-    // ✅ MainWindow에서 접근할 수 있도록 getter 함수 추가
+    // Getter
     QString getApiUrl() const;
     quint16 getPort() const;
     bool getAutoConnect() const;
@@ -50,7 +56,7 @@ public:
     int getExposure() const;
     int getSaturation() const;
 
-    // ✅ MainWindow에서 설정 복원할 수 있도록 setter 함수 추가
+    // Setter
     void setApiUrl(const QString &url);
     void setPort(quint16 port);
     void setAutoConnect(bool enabled);
@@ -60,19 +66,21 @@ public:
     void setExposure(int value);
     void setSaturation(int value);
 
+    void updateRoiDisplay();
+
 signals:
-    void configUpdated(); // 나중에 MainWindow로 신호 보내기
-    void cameraConfigUpdateRequested(int brightness, int contrast, int exposure, int saturation); // ✅ 카메라 설정 서버에 POST 요청
+    void configUpdated();
+    void cameraConfigUpdateRequested(int brightness, int contrast, int exposure, int saturation);
 
 private slots:
     void onUpdateClicked();
     void onCancelClicked();
-    void onPageChanged(int index);  // ✅ 사이드바 클릭 시 처리
+    void onPageChanged(int index);
 
 private:
-    // 💡 왼쪽 사이드바
-    QListWidget *pageSelector;          // ✅ 누락되었던 변수
-    QStackedWidget *stackedPages;       // ✅ 설정 페이지 전환용
+    // 사이드바
+    QListWidget *pageSelector;
+    QStackedWidget *stackedPages;
 
     // Network
     QLineEdit *apiUrlEdit;
@@ -92,17 +100,21 @@ private:
     QPushButton *updateBtn;
     QPushButton *cancelBtn;
 
-    // Camera settings
-    QLabel *originalFrame;               // 기존 영상 (JPEG 1장)
-    QVideoWidget *previewVideo;         // 변경 후 영상 스트리밍용
-    QMediaPlayer *previewPlayer;        // 영상 재생기
+    QLabel *originalFrame;
+    QVideoWidget *previewVideo;
+    QMediaPlayer *previewPlayer;
     QPushButton *applyBtn;
 
     QNetworkAccessManager *netManager;
-
     QVBoxLayout *cameraLayoutContainer;
 
-    // ✅ Cancel 시 복원용 값 저장
+    // ROI 설정
+    RoiFrame *roiCanvas;                        // ✅ QLabel → RoiFrame 교체
+    QLabel *platformCountLabel;
+    QVector<QLabel*> coordLabels;
+    QVector<QVector<QPoint>> roiPolygons;
+
+    // Cancel 복원용
     QString originalApiUrl;
     quint16 originalPort;
     bool originalAutoConnect;
@@ -111,9 +123,8 @@ private:
     int originalExposure;
     int originalSaturation;
 
-    void saveOriginalValues();  // ✅ 변경 전 값 저장
-    void restoreOriginalValues(); // ✅ Cancel 시 복원
+    void saveOriginalValues();
+    void restoreOriginalValues();
 };
-
 
 #endif // SETTINGSDIALOG_H

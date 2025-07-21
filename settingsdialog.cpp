@@ -18,6 +18,9 @@
 #include <QTimeEdit>
 #include <QLabel>
 #include <QDebug>
+#include <QJsonArray>
+#include "roi_frame.h"
+RoiFrame *roiCanvas;
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -27,57 +30,48 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     pageSelector = new QListWidget(this);
     pageSelector->addItem("🌐 네트워크 설정");
     pageSelector->addItem("🎥 카메라 설정");
+    pageSelector->addItem("🧭 ROI 설정");
     pageSelector->addItem("🌙 절전모드 설정");
     pageSelector->addItem("🏚 Home");
     pageSelector->setFixedWidth(150);
     pageSelector->setStyleSheet("background-color: #2a2a2a; color: white;");
-
     connect(pageSelector, &QListWidget::currentRowChanged, this, &SettingsDialog::onPageChanged);
 
-    // 🌐 네트워크 설정 페이지
+    // 🌐 네트워크 설정
     apiUrlEdit = new QLineEdit(this);
     portEdit = new QLineEdit(this);
     autoConnectCheck = new QCheckBox("Auto Connect", this);
-
     QFormLayout *networkLayout = new QFormLayout;
     networkLayout->addRow("API URL :", apiUrlEdit);
     networkLayout->addRow("Port :", portEdit);
     networkLayout->addRow(autoConnectCheck);
-
     QWidget *networkPage = new QWidget;
     networkPage->setLayout(networkLayout);
 
-    // 🎥 카메라 설정 페이지
+    // 🎥 카메라 설정
     brightnessSlider = new ClickableSlider(Qt::Horizontal, this);
     brightnessSlider->setRange(0, 100);
-    brightnessSlider->setTickInterval(1);
     contrastSlider = new ClickableSlider(Qt::Horizontal, this);
     contrastSlider->setRange(0, 100);
-    contrastSlider->setTickInterval(1);
     exposureSlider = new ClickableSlider(Qt::Horizontal, this);
     exposureSlider->setRange(0, 100);
-    exposureSlider->setTickInterval(1);
     saturationSlider = new ClickableSlider(Qt::Horizontal, this);
     saturationSlider->setRange(0, 100);
-    saturationSlider->setTickInterval(1);
 
     QFormLayout *cameraLayout = new QFormLayout;
     cameraLayout->setVerticalSpacing(20);
     cameraLayout->setHorizontalSpacing(15);
     cameraLayout->setContentsMargins(10, 10, 10, 0);
-
     cameraLayout->addRow("Brightness:", brightnessSlider);
     cameraLayout->addRow("Contrast:", contrastSlider);
     cameraLayout->addRow("Exposure:", exposureSlider);
     cameraLayout->addRow("Saturation:", saturationSlider);
-
     QWidget *formWrapper = new QWidget;
     formWrapper->setLayout(cameraLayout);
 
     applyBtn = new QPushButton("Apply");
     applyBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px;");
     applyBtn->setFixedSize(90, 25);
-
     QHBoxLayout *applyLayout = new QHBoxLayout;
     applyLayout->addStretch();
     applyLayout->addWidget(applyBtn);
@@ -105,29 +99,77 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     previewLayout->addWidget(originalFrame);
     previewLayout->addWidget(previewVideo);
     cameraLayoutContainer->addLayout(previewLayout);
-
     QWidget *cameraPage = new QWidget;
     cameraPage->setLayout(cameraLayoutContainer);
 
-    // 🌙 절전모드 설정 페이지
+    // 🧭 ROI 설정
+    roiCanvas = new RoiFrame(this);  // ✅ 새로 만든 RoiFrame 클래스 사용
+    roiCanvas->setFixedSize(640, 360);
+    roiCanvas->setStyleSheet("background-color: black; border: 1px solid gray;");
+    roiCanvas->setAlignment(Qt::AlignCenter);
+
+    // 🆕 가이드 라벨 추가
+    QLabel *roiGuideLabel = new QLabel("※ 플랫폼 상 가장 앞 쪽이 1번 플랫폼\n※ LT, RT, RB, LB 순서로 ROI 지정", this);
+    roiGuideLabel->setStyleSheet("color: lightgray; font-size: 15px;");
+    roiGuideLabel->setAlignment(Qt::AlignLeft);
+
+    // roiCanvas + 가이드를 세로로 묶기
+    QVBoxLayout *roiCanvasWithGuideLayout = new QVBoxLayout;
+    roiCanvasWithGuideLayout->setSpacing(4);
+    roiCanvasWithGuideLayout->addWidget(roiCanvas, 0, Qt::AlignTop);
+    roiCanvasWithGuideLayout->addWidget(roiGuideLabel);
+
+
+    platformCountLabel = new QLabel("플랫폼 개수: 0");
+    platformCountLabel->setStyleSheet("color: white; font-weight: bold;");
+
+    for (int i = 0; i < 4; ++i) {
+        QLabel *label = new QLabel();
+        label->setStyleSheet("color: white;");
+        coordLabels.append(label);
+    }
+
+    QVBoxLayout *roiSideLayout = new QVBoxLayout;
+    roiSideLayout->setContentsMargins(0, 7, 0, 0);
+    roiSideLayout->addWidget(platformCountLabel);
+    for (QLabel *label : coordLabels)
+        roiSideLayout->addWidget(label);
+    roiSideLayout->addStretch();
+
+    QHBoxLayout *roiMainLayout = new QHBoxLayout;
+    roiMainLayout->addLayout(roiCanvasWithGuideLayout);
+    roiMainLayout->addSpacing(5);
+    roiMainLayout->addLayout(roiSideLayout);
+
+    // ✅ roiCanvas → roiPolygons 반영 및 UI 갱신 연결
+    connect(roiCanvas, &RoiFrame::roiUpdated, this, [=]() {
+        roiPolygons = roiCanvas->getRois();
+        updateRoiDisplay();
+    });
+
+    QWidget *roiPage = new QWidget;
+    roiPage->setLayout(roiMainLayout);
+
+    // 🌙 절전모드
     sleepStartEdit = new QTimeEdit(this);
     sleepEndEdit = new QTimeEdit(this);
     sleepStartEdit->setDisplayFormat("HH:mm");
     sleepEndEdit->setDisplayFormat("HH:mm");
     sleepStartEdit->setTime(QTime::fromString("01:00", "HH:mm"));
     sleepEndEdit->setTime(QTime::fromString("05:00", "HH:mm"));
-
     QFormLayout *sleepLayout = new QFormLayout;
     sleepLayout->addRow("절전모드 시작 시각:", sleepStartEdit);
     sleepLayout->addRow("절전모드 종료 시각:", sleepEndEdit);
     QWidget *sleepPage = new QWidget;
     sleepPage->setLayout(sleepLayout);
 
+    // 스택 페이지 연결
     stackedPages = new QStackedWidget(this);
     stackedPages->addWidget(networkPage);
     stackedPages->addWidget(cameraPage);
+    stackedPages->addWidget(roiPage);
     stackedPages->addWidget(sleepPage);
-    stackedPages->addWidget(new QWidget());
+    stackedPages->addWidget(new QWidget());  // Home placeholder
 
     updateBtn = new QPushButton("Update", this);
     updateBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px;");
@@ -145,6 +187,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     rightHLayout->addWidget(cancelBtn);
     rightHLayout->addWidget(updateBtn);
     rightLayout->addWidget(stackedPages);
+    rightHLayout->setContentsMargins(0, 0, 15, 15);  // 좌, 상, 우, 하
     rightLayout->addLayout(rightHLayout);
 
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
@@ -152,8 +195,9 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     mainLayout->addLayout(rightLayout);
     setLayout(mainLayout);
     setWindowTitle("Settings");
-    resize(900, 600);
+    resize(900, 560);
 
+    // 설정값 백업
     originalApiUrl = apiUrlEdit->text();
     originalPort = portEdit->text().toUInt();
     originalAutoConnect = autoConnectCheck->isChecked();
@@ -162,40 +206,23 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     originalExposure = exposureSlider->value();
     originalSaturation = saturationSlider->value();
 
-    // ✅ Apply 버튼 클릭 시 프리뷰 요청
+    // Apply 프리뷰 기능 연결
     connect(applyBtn, &QPushButton::clicked, this, [=]() {
-        QJsonObject cameraObj;
-        cameraObj["brightness"] = brightnessSlider->value();
-        cameraObj["contrast"] = contrastSlider->value();
-        cameraObj["exposure"] = exposureSlider->value();
-        cameraObj["saturation"] = saturationSlider->value();
-        cameraObj["preview"] = true;
-
-        QJsonObject body;
-        body["camera"] = cameraObj;
-
-        QNetworkRequest request(QUrl("http://192.168.0.59/cgi-bin/config.cgi"));
-        request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-
-        QNetworkReply *reply = netManager->post(request, QJsonDocument(body).toJson());
+        QJsonObject cameraObj {
+            {"brightness", brightnessSlider->value()},
+            {"contrast", contrastSlider->value()},
+            {"exposure", exposureSlider->value()},
+            {"saturation", saturationSlider->value()},
+            {"preview", true}
+        };
+        QJsonObject body {{"camera", cameraObj}};
+        QNetworkRequest req(QUrl("http://192.168.0.59/cgi-bin/config.cgi"));
+        req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+        QNetworkReply *reply = netManager->post(req, QJsonDocument(body).toJson());
 
         connect(reply, &QNetworkReply::finished, this, [=]() {
             reply->deleteLater();
-
             QByteArray responseData = reply->readAll();
-
-            // ✅ (1) 먼저 JSON 에러 응답인지 검사
-            if (responseData.startsWith("{")) {
-                QJsonParseError parseError;
-                QJsonDocument doc = QJsonDocument::fromJson(responseData, &parseError);
-                if (!parseError.error && doc.isObject() && doc.object().value("result") == "error") {
-                    qWarning() << QString("❌ Apply - 서버 오류 응답: %1")
-                                      .arg(doc.object().value("msg").toString());
-                    return;
-                }
-            }
-
-            // ✅ (2) JPEG 이미지 응답 처리
             QPixmap pix;
             if (pix.loadFromData(responseData)) {
                 originalFrame->setPixmap(pix.scaled(originalFrame->size(), Qt::KeepAspectRatio));
@@ -204,26 +231,65 @@ SettingsDialog::SettingsDialog(QWidget *parent)
                 qWarning() << "❌ Apply - JPEG 응답 파싱 실패";
             }
 
-            // ✅ (3) RTSP 프리뷰 재생
-            QUrl previewStreamUrl("rtsp://192.168.0.59:8554/stream");
+            QUrl streamUrl("rtsp://192.168.0.59:8554/stream");
             previewPlayer->stop();
-            previewPlayer->setSource(previewStreamUrl);
+            previewPlayer->setSource(streamUrl);
             previewPlayer->play();
-
-            // 🔍 스트리밍 실패 시 디버깅 메시지
             connect(previewPlayer, &QMediaPlayer::errorOccurred, this, [](QMediaPlayer::Error err) {
-                qWarning() << "❌ Preview RTSP 스트림 오류 발생:" << err;
+                qWarning() << "❌ Preview 스트림 오류:" << err;
             });
         });
     });
 }
 
+
+// ✅ ROI 정보 표시용 함수 추가
+void SettingsDialog::updateRoiDisplay() {
+    platformCountLabel->setText(QString("플랫폼 개수: %1").arg(roiPolygons.size()));
+
+    for (int i = 0; i < coordLabels.size(); ++i) {
+        if (i < roiPolygons.size()) {
+            const QVector<QPoint> &pts = roiPolygons[i];
+            QString text = QString("좌표: (%1, %2)\n        (%3, %4)\n        (%5, %6)\n        (%7, %8)")
+                               .arg(pts[0].x()).arg(pts[0].y())
+                               .arg(pts[1].x()).arg(pts[1].y())
+                               .arg(pts[2].x()).arg(pts[2].y())
+                               .arg(pts[3].x()).arg(pts[3].y());
+            coordLabels[i]->setText(text);
+        } else if (i == 0) {
+            coordLabels[i]->setText("좌표:");
+        } else {
+            coordLabels[i]->clear();
+        }
+    }
+}
+
+
 void SettingsDialog::onPageChanged(int index) {
-    if (index == 3) {
+    if (index == 4) {
         close();
         return;
     }
     stackedPages->setCurrentIndex(index);
+
+    if (index == 2) {  // ROI 설정 탭
+        cancelBtn->setText("Reset ROI");
+
+        // ⬇️ 이미지 캡처 받아오기
+        QNetworkRequest imgReq(QUrl("http://192.168.0.59/cgi-bin/capture.cgi"));
+        QNetworkReply *imgReply = netManager->get(imgReq);
+        connect(imgReply, &QNetworkReply::finished, this, [=]() {
+            imgReply->deleteLater();
+            QPixmap pix;
+            if (pix.loadFromData(imgReply->readAll())) {
+                roiCanvas->setBackgroundImage(pix);  // roiCanvas에 QPixmap 설정
+                qDebug() << "✅ 캡처 이미지 수신 및 적용 완료";
+            } else {
+                qWarning() << "❌ 캡처 이미지 로딩 실패";
+            }
+        });
+    }
+
 }
 
 void SettingsDialog::onUpdateClicked() {
@@ -240,17 +306,54 @@ void SettingsDialog::onUpdateClicked() {
         netManager->post(req, QJsonDocument(QJsonObject{{"camera", cameraObj}}).toJson());
     }
     accept();
+
+    // ROI 설정 탭
+    if (stackedPages->currentIndex() == 2) {
+        const double scaleX = 1280.0 / roiCanvas->width();
+        const double scaleY = 720.0 / roiCanvas->height();
+
+        QJsonArray stopRois;
+        for (const auto &polygon : roiPolygons) {
+            QJsonArray roiArray;
+            for (const QPoint &pt : polygon) {
+                QJsonArray ptArray;
+                ptArray.append(static_cast<int>(pt.x() * scaleX));
+                ptArray.append(static_cast<int>(pt.y() * scaleY));
+                roiArray.append(ptArray);
+            }
+            stopRois.append(roiArray);
+        }
+
+        QJsonObject body;
+        body["stop_rois"] = stopRois;
+
+        QNetworkRequest req(QUrl("http://192.168.0.59/cgi-bin/roi-setup.cgi"));
+        req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+        netManager->post(req, QJsonDocument(body).toJson());
+
+        qDebug() << "✅ ROI 설정 전송 (원본 좌표 기준):" << body;
+    }
+
+
 }
 
 void SettingsDialog::onCancelClicked() {
-    apiUrlEdit->setText(originalApiUrl);
-    portEdit->setText(QString::number(originalPort));
-    autoConnectCheck->setChecked(originalAutoConnect);
-    brightnessSlider->setValue(originalBrightness);
-    contrastSlider->setValue(originalContrast);
-    exposureSlider->setValue(originalExposure);
-    saturationSlider->setValue(originalSaturation);
-    reject();
+    if (stackedPages->currentIndex() == 2) {
+        // ROI 설정 탭: ROI만 초기화
+        roiPolygons.clear();
+        roiCanvas->clear();
+        updateRoiDisplay();
+    } else {
+        // 나머지 탭: 원래대로 설정 복원하고 창 닫기
+        apiUrlEdit->setText(originalApiUrl);
+        portEdit->setText(QString::number(originalPort));
+        autoConnectCheck->setChecked(originalAutoConnect);
+        brightnessSlider->setValue(originalBrightness);
+        contrastSlider->setValue(originalContrast);
+        exposureSlider->setValue(originalExposure);
+        saturationSlider->setValue(originalSaturation);
+        reject();  // 설정창 닫기
+    }
 }
 
 // ---- ClickableSlider 구현 ----
