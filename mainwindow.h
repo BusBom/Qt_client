@@ -13,6 +13,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "settingsdialog.h"
+#include "videothread.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -56,9 +57,9 @@ private:
     QMediaPlayer *mediaPlayer;
     QVideoWidget *videoWidget;
     QComboBox *streamSelector;
-    cv::VideoCapture cap;
-    QTimer *frameTimer;
     QLabel *streamArea;
+
+    VideoThread *videoThread = nullptr;
 
     void setupUI();
     void setupConnections();

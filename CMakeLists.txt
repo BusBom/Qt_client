@@ -12,6 +12,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     MultimediaWidgets
     LinguistTools
 )
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
 # ✅ OpenCV 추가
 set(OpenCV_DIR "C:/opencv/build")
@@ -33,6 +34,7 @@ qt_add_executable(Busbomproject
     appmanager.h appmanager.cpp
     signuppage.h signuppage.cpp
     dbmanager.h dbmanager.cpp
+    videothread.h videothread.cpp
 )
 
 qt_add_translations(
@@ -51,6 +53,7 @@ target_link_libraries(Busbomproject
         Qt6::MultimediaWidgets
         ${OpenCV_LIBS}     # ✅ OpenCV 라이브러리
 )
+target_link_libraries(Busbomproject PRIVATE Qt6::Core)
 
 include(GNUInstallDirs)
 

@@ -21,8 +21,6 @@
 #include <QLabel>
 #include <QNetworkAccessManager>
 #include <QVBoxLayout>
-#include <QLocalSocket>
-#define SOCKET_PATH "/tmp/camera_socket"
 
 class ClickableSlider : public QSlider
 {
@@ -103,7 +101,6 @@ private:
     QNetworkAccessManager *netManager;
 
     QVBoxLayout *cameraLayoutContainer;
-    QLocalSocket *unixSocket;
 
     // ✅ Cancel 시 복원용 값 저장
     QString originalApiUrl;

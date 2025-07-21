@@ -66,7 +66,7 @@ MainWindow::MainWindow(QWidget *parent)
         QJsonObject body;
         body["camera"] = cameraObj;
 
-        QNetworkRequest request(QUrl("http://192.168.0.76/cgi-bin/config.cgi"));
+        QNetworkRequest request(QUrl("http://192.168.0.59/cgi-bin/config.cgi"));
         request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
         QNetworkReply *reply = networkManager->post(request, QJsonDocument(body).toJson());
@@ -99,33 +99,10 @@ MainWindow::MainWindow(QWidget *parent)
     busTimer->start(1000);
 
     // ✅ 기본값 초기화
-    apiUrlBase = "http://192.168.0.76/cgi-bin/sequence.cgi";
+    apiUrlBase = "http://192.168.0.59/cgi-bin/sequence.cgi";
     apiPort = 80;
     autoConnect = false;
 }
-
-void MainWindow::startLiveStream() {
-    QString rtspUrl = "rtsp://192.168.0.62:554/profile2/media.smp";  // 🔁 이 주소 사용
-    if (!cap.open(rtspUrl.toStdString())) {
-        qDebug() << "❌ RTSP 열기 실패";
-        return;
-    }
-
-    frameTimer = new QTimer(this);
-    connect(frameTimer, &QTimer::timeout, this, [=]() {
-        cv::Mat frame;
-        if (cap.read(frame)) {
-            cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
-            QImage img(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
-            QPixmap pixmap = QPixmap::fromImage(img).scaled(streamArea->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-            streamArea->setPixmap(pixmap);
-        } else {
-            qDebug() << "⚠️ 프레임 수신 실패";
-        }
-    });
-    frameTimer->start(33);  // 약 30fps
-}
-
 
 void MainWindow::setupUI() {
     // 🚍 Title + Icon
@@ -261,20 +238,28 @@ void MainWindow::setupUI() {
             videoWidget->hide();
             streamArea->show();
 
-            if (!cap.isOpened()) {
-                startLiveStream();  // ✅ 실시간 스트리밍 시작
+            if (videoThread == nullptr) {
+                videoThread = new VideoThread(this);
+                connect(videoThread, &VideoThread::frameReady, this, [=](const QImage &img) {
+                    qDebug() << "🟡 frameReady 수신됨. 크기:" << img.size();
+                    streamArea->setPixmap(QPixmap::fromImage(img).scaled(streamArea->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                });
+                videoThread->start();
+            } else if (!videoThread->isRunning()) {
+                videoThread->start();
             }
 
         } else if (mode == "Recorded Video") {
-            if (cap.isOpened()) {
-                frameTimer->stop();
-                cap.release();  // ✅ 스트리밍 중지
-            }
-
             streamArea->hide();
             videoWidget->show();
 
-            QString videoPath = "http://192.168.0.20/videos/output.mp4";
+            if (videoThread) {
+                videoThread->stop();
+                videoThread->deleteLater();
+                videoThread = nullptr;
+            }
+
+            QString videoPath = "http://192.168.0.59/output.mp4";
             mediaPlayer->setSource(QUrl(videoPath));
             mediaPlayer->play();
         }
@@ -484,22 +469,16 @@ void MainWindow::fetchBusData() {
 }
 
 void MainWindow::playRecordedVideo() {
-    QString videoPath = "http://192.168.0.20/videos/output.mp4"; // 실제 URL로 바꾸기
+    QString videoPath = "http://192.168.0.59/videos/output.mp4"; // 실제 URL로 바꾸기
     mediaPlayer->setSource(QUrl(videoPath));
     mediaPlayer->play();
 }
 
 
 MainWindow::~MainWindow() {
+    if (videoThread) {
+        videoThread->stop();
+        videoThread->deleteLater();
+    }
     delete ui;
-
-    if (cap.isOpened()) {
-        frameTimer->stop();
-        cap.release();
-    }
-
-    if (frameTimer) {
-        frameTimer->stop();
-        frameTimer->deleteLater();
-    }
 }

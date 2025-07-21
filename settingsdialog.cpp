@@ -1,25 +1,29 @@
 #include "settingsdialog.h"
-#include <QLocalSocket>               // ✅ 유닉스 도메인 소켓
-#define SOCKET_PATH "/tmp/camera_socket"  // ✅ 소켓 경로 정의
-#include <QMediaPlayer>       // ✅ 영상 재생용
-#include <QVideoWidget>       // ✅ 영상 표시용 위젯
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QTimer>
+#include <QPainter>
+#include <QStyleOptionSlider>
+#include <QMouseEvent>
+#include <QMediaPlayer>
+#include <QVideoWidget>
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QListWidget>
-#include <QJsonObject>
-#include <QJsonDocument>
-#include <QNetworkAccessManager>
-#include <QNetworkRequest>
-#include <QNetworkReply>
+#include <QCheckBox>
+#include <QStackedWidget>
+#include <QTimeEdit>
+#include <QLabel>
+#include <QDebug>
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
 {
     netManager = new QNetworkAccessManager(this);
-    unixSocket = new QLocalSocket(this);
 
-    // 💡 왼쪽 사이드바
     pageSelector = new QListWidget(this);
     pageSelector->addItem("🌐 네트워크 설정");
     pageSelector->addItem("🎥 카메라 설정");
@@ -43,7 +47,6 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     QWidget *networkPage = new QWidget;
     networkPage->setLayout(networkLayout);
 
-
     // 🎥 카메라 설정 페이지
     brightnessSlider = new ClickableSlider(Qt::Horizontal, this);
     brightnessSlider->setRange(0, 100);
@@ -61,7 +64,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     QFormLayout *cameraLayout = new QFormLayout;
     cameraLayout->setVerticalSpacing(20);
     cameraLayout->setHorizontalSpacing(15);
-    cameraLayout->setContentsMargins(10, 10, 10, 10);
+    cameraLayout->setContentsMargins(10, 10, 10, 0);
 
     cameraLayout->addRow("Brightness:", brightnessSlider);
     cameraLayout->addRow("Contrast:", contrastSlider);
@@ -75,15 +78,15 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     applyBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px;");
     applyBtn->setFixedSize(90, 25);
 
-    QHBoxLayout *applyLayout = new QHBoxLayout;  // ✅ Apply 버튼 오른쪽 정렬 배치
+    QHBoxLayout *applyLayout = new QHBoxLayout;
     applyLayout->addStretch();
     applyLayout->addWidget(applyBtn);
-    applyLayout->setContentsMargins(0, 5, 15, 5);
+    applyLayout->setContentsMargins(0, 0, 15, 5);
 
     cameraLayoutContainer = new QVBoxLayout;
-
+    cameraLayoutContainer->setSpacing(0);
     cameraLayoutContainer->addWidget(formWrapper);
-    cameraLayoutContainer->addLayout(applyLayout); // ✅ 슬라이더 바로 아래 오른쪽에 Apply 버튼 배치
+    cameraLayoutContainer->addLayout(applyLayout);
 
     originalFrame = new QLabel("원본 영상");
     originalFrame->setFixedSize(320, 240);
@@ -98,40 +101,10 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     previewPlayer = new QMediaPlayer(this);
     previewPlayer->setVideoOutput(previewVideo);
 
-
-    QHBoxLayout *previewLayout = new QHBoxLayout;  // ✅ 두 프레임 나란히 동일 크기, 같은 높이 배치
+    QHBoxLayout *previewLayout = new QHBoxLayout;
     previewLayout->addWidget(originalFrame);
     previewLayout->addWidget(previewVideo);
-
     cameraLayoutContainer->addLayout(previewLayout);
-
-    connect(applyBtn, &QPushButton::clicked, this, [=]() {
-        QJsonObject cameraObj;
-        cameraObj["brightness"] = brightnessSlider->value();
-        cameraObj["contrast"] = contrastSlider->value();
-        cameraObj["exposure"] = exposureSlider->value();
-        cameraObj["saturation"] = saturationSlider->value();
-        cameraObj["preview"] = true;
-
-        QJsonObject body;
-        body["camera"] = cameraObj;
-
-        QNetworkRequest request(QUrl("http://192.168.0.64/cgi-bin/config.cgi"));
-        request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-
-        QNetworkReply *reply = netManager->post(request, QJsonDocument(body).toJson());
-
-        connect(reply, &QNetworkReply::finished, this, [=]() {
-            reply->deleteLater();
-
-            // ✅ 실제 영상 스트림 주소로 수정 필요
-            QUrl previewStreamUrl("http://192.168.0.64/preview_stream");  // 예시 URL
-            previewPlayer->stop();   // 혹시 재생 중이면 중단
-            previewPlayer->setSource(previewStreamUrl);
-            previewPlayer->play();
-        });
-    });
-
 
     QWidget *cameraPage = new QWidget;
     cameraPage->setLayout(cameraLayoutContainer);
@@ -171,14 +144,12 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     rightHLayout->addStretch();
     rightHLayout->addWidget(cancelBtn);
     rightHLayout->addWidget(updateBtn);
-
     rightLayout->addWidget(stackedPages);
     rightLayout->addLayout(rightHLayout);
 
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
     mainLayout->addWidget(pageSelector);
     mainLayout->addLayout(rightLayout);
-
     setLayout(mainLayout);
     setWindowTitle("Settings");
     resize(900, 600);
@@ -190,148 +161,127 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     originalContrast = contrastSlider->value();
     originalExposure = exposureSlider->value();
     originalSaturation = saturationSlider->value();
+
+    // ✅ Apply 버튼 클릭 시 프리뷰 요청
+    connect(applyBtn, &QPushButton::clicked, this, [=]() {
+        QJsonObject cameraObj;
+        cameraObj["brightness"] = brightnessSlider->value();
+        cameraObj["contrast"] = contrastSlider->value();
+        cameraObj["exposure"] = exposureSlider->value();
+        cameraObj["saturation"] = saturationSlider->value();
+        cameraObj["preview"] = true;
+
+        QJsonObject body;
+        body["camera"] = cameraObj;
+
+        QNetworkRequest request(QUrl("http://192.168.0.59/cgi-bin/config.cgi"));
+        request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+        QNetworkReply *reply = netManager->post(request, QJsonDocument(body).toJson());
+
+        connect(reply, &QNetworkReply::finished, this, [=]() {
+            reply->deleteLater();
+
+            QByteArray responseData = reply->readAll();
+
+            // ✅ (1) 먼저 JSON 에러 응답인지 검사
+            if (responseData.startsWith("{")) {
+                QJsonParseError parseError;
+                QJsonDocument doc = QJsonDocument::fromJson(responseData, &parseError);
+                if (!parseError.error && doc.isObject() && doc.object().value("result") == "error") {
+                    qWarning() << QString("❌ Apply - 서버 오류 응답: %1")
+                                      .arg(doc.object().value("msg").toString());
+                    return;
+                }
+            }
+
+            // ✅ (2) JPEG 이미지 응답 처리
+            QPixmap pix;
+            if (pix.loadFromData(responseData)) {
+                originalFrame->setPixmap(pix.scaled(originalFrame->size(), Qt::KeepAspectRatio));
+                qInfo() << "✅ Apply - 원본 이미지 렌더링 완료";
+            } else {
+                qWarning() << "❌ Apply - JPEG 응답 파싱 실패";
+            }
+
+            // ✅ (3) RTSP 프리뷰 재생
+            QUrl previewStreamUrl("rtsp://192.168.0.59:8554/stream");
+            previewPlayer->stop();
+            previewPlayer->setSource(previewStreamUrl);
+            previewPlayer->play();
+
+            // 🔍 스트리밍 실패 시 디버깅 메시지
+            connect(previewPlayer, &QMediaPlayer::errorOccurred, this, [](QMediaPlayer::Error err) {
+                qWarning() << "❌ Preview RTSP 스트림 오류 발생:" << err;
+            });
+        });
+    });
 }
 
 void SettingsDialog::onPageChanged(int index) {
     if (index == 3) {
-        this->close();  // 🏚 Home 선택 시 설정 창 닫기
-    } else {
-        stackedPages->setCurrentIndex(index);
-
-        if (index == 1) {
-            if (unixSocket->isOpen()) {
-                unixSocket->abort();  // 이전 연결 닫기
-            }
-
-            unixSocket->connectToServer(SOCKET_PATH);  // 경로는 #define으로 사용
-
-            QByteArray buffer;
-            connect(unixSocket, &QLocalSocket::readyRead, this, [=]() mutable {
-                buffer.append(unixSocket->readAll());
-                // JPEG 종료 마커 감지 (0xFF 0xD9)
-                if (buffer.contains("\xFF\xD9")) {
-                    QPixmap pix;
-                    pix.loadFromData(buffer);
-                    originalFrame->setPixmap(pix.scaled(originalFrame->size(), Qt::KeepAspectRatio));
-                    buffer.clear();
-                    unixSocket->disconnectFromServer();  // 한 번 수신 후 종료
-                }
-            });
-        }
-
+        close();
+        return;
     }
+    stackedPages->setCurrentIndex(index);
 }
 
 void SettingsDialog::onUpdateClicked() {
-    if (stackedPages->currentIndex() == 0) {
-        emit configUpdated();
-    } else if (stackedPages->currentIndex() == 1) {
-        emit cameraConfigUpdateRequested(
-            brightnessSlider->value(),
-            contrastSlider->value(),
-            exposureSlider->value(),
-            saturationSlider->value()
-            );
+    if (stackedPages->currentIndex() == 1) {
+        QJsonObject cameraObj {
+            {"brightness", brightnessSlider->value()},
+            {"contrast", contrastSlider->value()},
+            {"exposure", exposureSlider->value()},
+            {"saturation", saturationSlider->value()},
+            {"preview", false}
+        };
+        QNetworkRequest req(QUrl("http://192.168.0.59/cgi-bin/config.cgi"));
+        req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+        netManager->post(req, QJsonDocument(QJsonObject{{"camera", cameraObj}}).toJson());
     }
     accept();
 }
 
 void SettingsDialog::onCancelClicked() {
-    // 설정 복원
     apiUrlEdit->setText(originalApiUrl);
     portEdit->setText(QString::number(originalPort));
     autoConnectCheck->setChecked(originalAutoConnect);
-
     brightnessSlider->setValue(originalBrightness);
     contrastSlider->setValue(originalContrast);
     exposureSlider->setValue(originalExposure);
     saturationSlider->setValue(originalSaturation);
-
     reject();
 }
 
+// ---- ClickableSlider 구현 ----
+ClickableSlider::ClickableSlider(Qt::Orientation o, QWidget *p) : QSlider(o, p) { setMinimumHeight(30); }
 
-ClickableSlider::ClickableSlider(Qt::Orientation orientation, QWidget *parent)
-    : QSlider(orientation, parent)
-{
-    setMinimumHeight(30);
-}
-
-void ClickableSlider::mousePressEvent(QMouseEvent *event)
-{
+void ClickableSlider::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
-        int sliderMin = this->minimum();
-        int sliderMax = this->maximum();
-        int newValue;
-
-        if (orientation() == Qt::Horizontal) {
-            int clickPos = event->x();
-            int sliderWidth = this->width();
-            double ratio = static_cast<double>(clickPos) / sliderWidth;
-            ratio = std::min(std::max(ratio, 0.0), 1.0);
-            newValue = sliderMin + static_cast<int>(ratio * (sliderMax - sliderMin));
-        } else {
-            int clickPos = event->y();
-            int sliderHeight = this->height();
-            double ratio = static_cast<double>(sliderHeight - clickPos) / sliderHeight;
-            ratio = std::min(std::max(ratio, 0.0), 1.0);
-            newValue = sliderMin + static_cast<int>(ratio * (sliderMax - sliderMin));
-        }
-
-        this->setValue(newValue);
+        double ratio = (orientation() == Qt::Horizontal) ?
+                           static_cast<double>(event->x()) / width() :
+                           static_cast<double>(height() - event->y()) / height();
+        setValue(minimum() + static_cast<int>(std::clamp(ratio, 0.0, 1.0) * (maximum() - minimum())));
     }
-
     QSlider::mousePressEvent(event);
 }
 
-void ClickableSlider::paintEvent(QPaintEvent *event)
-{
-    QSlider::paintEvent(event);
-
+void ClickableSlider::paintEvent(QPaintEvent *e) {
+    QSlider::paintEvent(e);
     QPainter painter(this);
     QStyleOptionSlider opt;
     initStyleOption(&opt);
-
-    QRect handleRect = style()->subControlRect(QStyle::CC_Slider, &opt, QStyle::SC_SliderHandle, this);
-
-    // 텍스트 설정
     QString valueText = QString::number(value());
-    QFont font;
-    font.setPointSize(8);
-    painter.setFont(font);
+    painter.setFont(QFont("", 8));
     painter.setPen(Qt::white);
-    painter.setRenderHint(QPainter::Antialiasing);
-
-    // 위치: 우측 상단 (슬라이더 전체 기준)
-    int textX = width() - 35;
-    int textY = 15;
-
-    painter.drawText(QRect(textX, textY, 30, 20), Qt::AlignRight, valueText);
+    painter.drawText(QRect(width() - 35, 15, 30, 20), Qt::AlignRight, valueText);
 }
 
-// ✅ 네트워크 설정 getter
-QString SettingsDialog::getApiUrl() const {
-    return apiUrlEdit->text();
-}
-
-quint16 SettingsDialog::getPort() const {
-    return portEdit->text().toUShort();
-}
-
-bool SettingsDialog::getAutoConnect() const {
-    return autoConnectCheck->isChecked();
-}
-
-// ✅ 카메라 설정 setter
-void SettingsDialog::setBrightness(int value) {
-    brightnessSlider->setValue(value);
-}
-void SettingsDialog::setContrast(int value) {
-    contrastSlider->setValue(value);
-}
-void SettingsDialog::setExposure(int value) {
-    exposureSlider->setValue(value);
-}
-void SettingsDialog::setSaturation(int value) {
-    saturationSlider->setValue(value);
-}
+// --- Getters ---
+QString SettingsDialog::getApiUrl() const { return apiUrlEdit->text(); }
+quint16 SettingsDialog::getPort() const { return portEdit->text().toUShort(); }
+bool SettingsDialog::getAutoConnect() const { return autoConnectCheck->isChecked(); }
+void SettingsDialog::setBrightness(int v) { brightnessSlider->setValue(v); }
+void SettingsDialog::setContrast(int v) { contrastSlider->setValue(v); }
+void SettingsDialog::setExposure(int v) { exposureSlider->setValue(v); }
+void SettingsDialog::setSaturation(int v) { saturationSlider->setValue(v); }
