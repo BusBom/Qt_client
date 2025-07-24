@@ -47,13 +47,13 @@ private:
     QTimer *pollTimer;
     QNetworkAccessManager *networkManager;
 
-    // ✅ 실시간 버스 정보 출력 테이블
+    // 실시간 버스 정보 출력 테이블
     QTableWidget *infoTable;
 
-    // ✅ 버스 정보 갱신 타이머
+    // 버스 정보 갱신 타이머
     QTimer *busTimer;
 
-    // ✅ Stream 관련
+    // Stream 관련
     QMediaPlayer *mediaPlayer;
     QVideoWidget *videoWidget;
     QComboBox *streamSelector;
@@ -65,7 +65,7 @@ private:
     void setupConnections();
     void startLiveStream();
 
-    // ✅ [추가] 네트워크 설정 저장용 변수
+    // 네트워크 설정 저장용 변수
     QString apiUrlBase;
     quint16 apiPort;
     bool autoConnect;

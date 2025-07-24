@@ -8,6 +8,7 @@
 #include <QFont>
 #include <QCursor>
 #include <QFrame>
+#include <QHBoxLayout>
 
 SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     // 배경 다크모드
@@ -15,9 +16,9 @@ SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     pal.setColor(QPalette::Window, QColor("#1e1e1e"));  // 원하는 배경색
     this->setAutoFillBackground(true);
     this->setPalette(pal);
-    this->setFixedSize(1280, 720);
+    this->setFixedSize(1240, 650);
 
-    // 흰색 카드 박스
+    // 로그인 창
     QFrame *whiteBox = new QFrame;
     whiteBox->setFixedSize(450, 350);
     whiteBox->setStyleSheet("background-color: white; border-radius: 20px;");
@@ -40,7 +41,18 @@ SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     passwordInput->setStyleSheet("background-color: #f5f7fa; padding: 10px; border: none;");
 
     QLabel *passwordConfrimLabel = new QLabel("Rewrite Password");
-    passwordLabel->setStyleSheet("font-size: 12px; color: #555;");
+    passwordConfrimLabel->setStyleSheet("font-size: 12px; color: #555;");
+
+    passwordMismatchLabel = new QLabel("※ 비밀번호가 일치하지 않습니다.");
+    passwordMismatchLabel->setStyleSheet("color: red; font-size: 9px;");
+    passwordMismatchLabel->hide();
+
+    QHBoxLayout *confirmLabelLayout = new QHBoxLayout;
+    confirmLabelLayout->addWidget(passwordConfrimLabel);
+    confirmLabelLayout->addSpacing(10);
+    confirmLabelLayout->addWidget(passwordMismatchLabel);
+    confirmLabelLayout->addStretch();
+
     passwordConfirmInput = new QLineEdit();
     passwordConfirmInput->setPlaceholderText("비밀번호를 다시 입력해주세요.");
     passwordConfirmInput->setEchoMode(QLineEdit::Password);
@@ -58,7 +70,6 @@ SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     )");
     connect(signUpBtn, &QPushButton::clicked, this, &SignUpPage::handleSignUpClicked);
 
-    // 🔻 회색 구분선
     QFrame *divider = new QFrame();
     divider->setFrameShape(QFrame::HLine);
     divider->setStyleSheet("background-color: #ccc;");
@@ -82,7 +93,7 @@ SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     formLayout->addWidget(emailInput);
     formLayout->addWidget(passwordLabel);
     formLayout->addWidget(passwordInput);
-    formLayout->addWidget(passwordConfrimLabel);
+    formLayout->addLayout(confirmLabelLayout);
     formLayout->addWidget(passwordConfirmInput);
     formLayout->addSpacing(10);
     formLayout->addWidget(signUpBtn);
@@ -100,21 +111,21 @@ SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     centerLayout->addStretch();
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->addStretch();
     mainLayout->addLayout(centerLayout);
-    mainLayout->addStretch();
+    mainLayout->setAlignment(centerLayout, Qt::AlignCenter);
+
 }
 
 void SignUpPage::handleSignUpClicked() {
     QString email = emailInput->text().trimmed();
     QString password = passwordInput->text().trimmed();
+    QString passwordConfirm = passwordConfirmInput->text().trimmed();
 
-    if (email.isEmpty() || password.isEmpty()) {
+    if (email.isEmpty() || password.isEmpty() || passwordConfirm.isEmpty()) {
         QMessageBox msgBox(this);
         msgBox.setWindowTitle("입력 오류");
         msgBox.setText("이메일과 비밀번호를 입력해주세요.");
         msgBox.setIcon(QMessageBox::Warning);
-
         msgBox.setStyleSheet(R"(
             QMessageBox {
                 background-color: white;
@@ -133,9 +144,25 @@ void SignUpPage::handleSignUpClicked() {
                 min-width: 60px;
             }
         )");
-
         msgBox.exec();
         return;
+    }
+
+    if (password != passwordConfirm) {
+        passwordConfirmInput->setStyleSheet(R"(
+            background-color: #f5f7fa;
+            padding: 10px;
+            border: 2px solid red;
+        )");
+        passwordMismatchLabel->show();
+        return;
+    } else {
+        passwordConfirmInput->setStyleSheet(R"(
+            background-color: #f5f7fa;
+            padding: 10px;
+            border: none;
+        )");
+        passwordMismatchLabel->hide();
     }
 
     if (DBManager::instance().addUser(email, password)) {

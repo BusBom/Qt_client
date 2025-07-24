@@ -23,7 +23,7 @@ void VideoThread::run() {
     int count = 0;
     int maxRetries = 100;
 
-    while (!stopped.loadRelaxed()) {  // ✅ 핵심 수정
+    while (!stopped.loadRelaxed()) {
         bool success = cap.read(frame);
 
         if (!success || frame.empty()) {

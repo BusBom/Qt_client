@@ -16,9 +16,9 @@ LoginPage::LoginPage(QWidget *parent) : QWidget(parent) {
     pal.setColor(QPalette::Window, QColor("#1e1e1e"));  // 원하는 배경색
     this->setAutoFillBackground(true);
     this->setPalette(pal);
-    this->setFixedSize(1280, 720);
+    this->setFixedSize(1240, 650);
 
-    // ✅ 흰색 프레임
+    // 로그인 창
     QFrame *whiteBox = new QFrame;
     whiteBox->setFixedSize(450, 350);
     whiteBox->setStyleSheet("background-color: white; border-radius: 20px;");
@@ -43,7 +43,7 @@ LoginPage::LoginPage(QWidget *parent) : QWidget(parent) {
     passwordInput->setStyleSheet("background-color: #f5f7fa; padding: 10px; border: none;");
 
     loginBtn = new QPushButton("LOG IN");
-    loginBtn->setFixedHeight(40);  // ✅ 고정 높이 설정
+    loginBtn->setFixedHeight(40);
     loginBtn->setStyleSheet(R"(
     background-color: #f28b40;
     border: none;
@@ -55,7 +55,6 @@ LoginPage::LoginPage(QWidget *parent) : QWidget(parent) {
 
     connect(loginBtn, &QPushButton::clicked, this, &LoginPage::handleLoginClicked);
 
-    // 🔻 회색 구분선
     QFrame *divider = new QFrame();
     divider->setFrameShape(QFrame::HLine);
     divider->setStyleSheet("background-color: #ccc;");
@@ -70,7 +69,7 @@ LoginPage::LoginPage(QWidget *parent) : QWidget(parent) {
         emit switchToSignupPage();
     });
 
-    // ✅ 내부 레이아웃 구성
+    // 내부 레이아웃 구성
     QVBoxLayout *formLayout = new QVBoxLayout;
     formLayout->setAlignment(Qt::AlignCenter);
     formLayout->addWidget(titleLabel);
@@ -87,16 +86,15 @@ LoginPage::LoginPage(QWidget *parent) : QWidget(parent) {
     formLayout->setContentsMargins(30, 20, 30, 20);
     whiteBox->setLayout(formLayout);
 
-    // ✅ 중앙 정렬 레이아웃
+    // 중앙 정렬 레이아웃
     QHBoxLayout *centerLayout = new QHBoxLayout;
     centerLayout->addStretch();
     centerLayout->addWidget(whiteBox);
     centerLayout->addStretch();
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->addStretch();
     mainLayout->addLayout(centerLayout);
-    mainLayout->addStretch();
+    mainLayout->setAlignment(centerLayout, Qt::AlignCenter);  // 수직 중앙 정렬
 
 }
 

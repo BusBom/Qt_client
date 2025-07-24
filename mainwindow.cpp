@@ -31,8 +31,9 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    this->setFixedSize(1280, 720);
-    setStyleSheet("background-color: #1e1e1e; color: white;");
+    this->setFixedSize(1240, 650);
+    setStyleSheet("background-color: #1e1e1e; color: #ccc;");
+
     QIcon icon(PATH + "/images/bus_face.png");
     setWindowIcon(icon);
 
@@ -41,22 +42,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     settingsDlg = new SettingsDialog(this);
     networkManager = new QNetworkAccessManager(this);
-    /*
-    pollTimer = new QTimer(this);
-    connect(pollTimer, &QTimer::timeout, this, &MainWindow::updateConnectionStatus);
-    pollTimer->start(3000);
-    */
 
-    // ✅ SettingsDialog 시그널 연결
+    // SettingsDialog 시그널 연결
     connect(settingsDlg, &SettingsDialog::configUpdated, this, [=]() {
-        // ✅ 네트워크 설정 반영
+        // 네트워크 설정 반영
         apiUrlBase = settingsDlg->getApiUrl();
         apiPort = settingsDlg->getPort();
         autoConnect = settingsDlg->getAutoConnect();
     });
 
     connect(settingsDlg, &SettingsDialog::cameraConfigUpdateRequested, this, [=](int brightness, int contrast, int exposure, int saturation) {
-        // ✅ 카메라 설정 서버 전송
+        // 카메라 설정 서버 전송
         QJsonObject cameraObj;
         cameraObj["brightness"] = brightness;
         cameraObj["contrast"] = contrast;
@@ -73,7 +69,7 @@ MainWindow::MainWindow(QWidget *parent)
 
         connect(reply, &QNetworkReply::finished, this, [=]() {
             QByteArray response = reply->readAll();
-            qDebug() << "📷 카메라 설정 응답:" << response;  // ✅ 로그 추가
+            qDebug() << "📷 카메라 설정 응답:" << response;
 
             QJsonDocument doc = QJsonDocument::fromJson(response);
             if (!doc.isNull() && doc.isObject()) {
@@ -83,7 +79,6 @@ MainWindow::MainWindow(QWidget *parent)
                 settingsDlg->setExposure(resCam.value("exposure").toInt());
                 settingsDlg->setSaturation(resCam.value("saturation").toInt());
 
-                // ✅ 설정 반영 확인용 로그도 추가!
                 qDebug() << "✅ 설정 반영됨 -> 밝기:" << resCam.value("brightness").toInt()
                          << ", 명암:" << resCam.value("contrast").toInt()
                          << ", 노출:" << resCam.value("exposure").toInt()
@@ -93,12 +88,11 @@ MainWindow::MainWindow(QWidget *parent)
         });
     });
 
-    // ✅ 버스 정보 실시간 갱신용 타이머
+    // 버스 정보 실시간 갱신용 타이머
     busTimer = new QTimer(this);
     connect(busTimer, &QTimer::timeout, this, &MainWindow::fetchBusData);
     busTimer->start(1000);
 
-    // ✅ 기본값 초기화
     apiUrlBase = "http://192.168.0.59/cgi-bin/sequence.cgi";
     apiPort = 80;
     autoConnect = false;
@@ -107,22 +101,33 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::setupUI() {
     // 🚍 Title + Icon
     QLabel *titleImgLabel = new QLabel("<img src='" + PATH + "/images/bus_face.png' width=32 height=32>");
-    QLabel *titleTextLabel = new QLabel("<b style='font-size:25px; color: white;'> Live Dashboard</b>");
+    titleImgLabel->setContentsMargins(3, 0, 0, 0);  // 왼쪽에서 오른쪽으로 3px 이동
+    QLabel *titleTextLabel = new QLabel("<b style='font-size:22px; color: white;'> Live Dashboard</b>");
     titleTextLabel->setContentsMargins(0, 0, 0, 2);
+    QFont hanwhaFont("Hanwha L", 13);
+    titleTextLabel->setFont(hanwhaFont);
 
     stopSelector = new QComboBox(this);
+    stopSelector->setMinimumContentsLength(22);
+    stopSelector->setFixedHeight(35);
+    stopSelector->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     stopSelector->setStyleSheet(R"(
-        QComboBox {
-            font-size: 12pt;
-            background-color: #2e2e2e;
-            color: white;
-            border-radius: 30px;
-            padding: 4px;
-        }
-        QComboBox QAbstractItemView {
-            font-size: 12pt;
-        }
-    )");
+    QComboBox {
+        background-color: #2c2c2c;
+        border: 0px solid #444;
+        color: #ccc;
+        padding: 4px 8px;
+    }
+    QComboBox QAbstractItemView {
+        background-color: #1e1e1e;
+        color: #ccc;
+        selection-background-color: #444;
+        border: none;
+        outline: none;
+        box-shadow: none;
+    }
+)");
+
     stopSelector->addItems({"래미안아파트.파이낸셜뉴스", "신분당선 강남역", "지하철2호선 강남역", "논현역"});
 
     statusRpi = new QLabel("Server: 🔴");
@@ -132,42 +137,48 @@ void MainWindow::setupUI() {
     statusStm32 = new QLabel("Display: 🔴");
     statusStm32->setStyleSheet("background-color: #313131;");
 
-    statusRpi->setFixedWidth(70);
-    statusCam->setFixedWidth(70);
-    statusStm32->setFixedWidth(70);
+    statusRpi->setFixedHeight(20);   // 더 작게도 가능 (예: 18, 16)
+    statusCam->setFixedHeight(20);
+    statusStm32->setFixedHeight(20);
 
-    QWidget *statusWidget = new QWidget;             // 또는 QFrame *statusWidget = new QFrame;
+    QWidget *statusWidget = new QWidget;
     statusWidget->setObjectName("statusWidget");
     statusWidget->setStyleSheet(R"(
     #statusWidget {
         background-color: #313131;
         border: 1px solid #313131;
-        border-radius: 15px;
-        padding-left: 15px;
-        padding-right: 15px;
+        padding-left: 20px;
+        padding-right: 20px;
 
     }
 
     QLabel {
-        qproperty-alignment: 'AlignCenter';  /* QLabel 내부 텍스트 중앙 정렬 */
+        qproperty-alignment: 'AlignCenter';
+        font-size: 11px;
     }
     )");
+
     QHBoxLayout *statusBtnLayout = new QHBoxLayout;
     statusBtnLayout->setAlignment(Qt::AlignCenter);
     statusBtnLayout->addWidget(statusRpi);
     statusBtnLayout->addWidget(statusCam);
     statusBtnLayout->addWidget(statusStm32);
     statusWidget->setLayout(statusBtnLayout);
+    statusWidget->setFixedHeight(35);
+    statusBtnLayout->setContentsMargins(13, 0, 8, 0);
+    statusBtnLayout->setSpacing(12);
 
     QHBoxLayout *leftHeaderHDiv = new QHBoxLayout;
     leftHeaderHDiv->setAlignment(Qt::AlignLeft);
+    leftHeaderHDiv->setContentsMargins(5, 0, 0, 0);
+    leftHeaderHDiv->setSpacing(10);
     leftHeaderHDiv->addWidget(titleImgLabel);
     leftHeaderHDiv->addWidget(titleTextLabel);
 
 
     QHBoxLayout *statusLayout = new QHBoxLayout;
     statusLayout->setAlignment(Qt::AlignLeft);
-    statusLayout->setSpacing(5);
+    statusLayout->setContentsMargins(11, 0, 0, 0);
     statusLayout->addWidget(stopSelector);
     statusLayout->addSpacing(20);
     statusLayout->addWidget(statusWidget);
@@ -176,18 +187,30 @@ void MainWindow::setupUI() {
     leftHeader->addLayout(leftHeaderHDiv);
     leftHeader->addLayout(statusLayout);
 
-    settingsButton = new QPushButton("⚙️ Settings");
-    settingsButton->setStyleSheet("color: white; background: transparent; font-size: 14px;");
+    // ⚙ Settings 버튼
+    settingsButton = new QPushButton("⚙ Settings");
+    settingsButton->setStyleSheet(R"(
+        background: transparent;
+        color: lightgray;
+        font-weight: normal;
+    )");
     settingsButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
+    QVBoxLayout *settingsLayout = new QVBoxLayout;
+    settingsLayout->setContentsMargins(0, 10, 15, 0);
+    settingsLayout->setSpacing(0);
+    settingsLayout->addWidget(settingsButton, 0, Qt::AlignTop | Qt::AlignRight);
+
     QHBoxLayout *topLayout = new QHBoxLayout;
-    topLayout->setAlignment(Qt::AlignTop);
+    topLayout->setContentsMargins(0, 2, 0, 0);
+    topLayout->setSpacing(0);
     topLayout->addLayout(leftHeader);
     topLayout->addStretch();
-    topLayout->addWidget(settingsButton);
+    topLayout->addLayout(settingsLayout);
 
     QWidget *topWidget = new QWidget(this);
     topWidget->setLayout(topLayout);
+
 
     // stream frame
     QLabel *streamTitle = new QLabel("📺");
@@ -197,7 +220,23 @@ void MainWindow::setupUI() {
     streamSelector = new QComboBox(this);
     streamSelector->addItem("Live Stream");
     streamSelector->addItem("Recorded Video");
-    streamSelector->setStyleSheet("font-size: 13px; background-color: #313131; color: white; padding: 2px 8px;");
+    streamSelector->setStyleSheet(R"(
+       QComboBox {
+           background-color: #2c2c2c;
+           border: 0px solid #444;
+           color: #ccc;
+           padding: 4px 8px;
+           font-size: 13px;
+       }
+       QComboBox QAbstractItemView {
+           background-color: #1e1e1e;
+           color: #ccc;
+           selection-background-color: #444;
+           border: none;
+           outline: none;
+       }
+    )");
+
 
     videoWidget = new QVideoWidget(this);
     videoWidget->setFixedSize(800, 450);
@@ -224,13 +263,13 @@ void MainWindow::setupUI() {
     QVBoxLayout *streamLayout = new QVBoxLayout;
     streamLayout->setAlignment(Qt::AlignVCenter);
     streamLayout->addLayout(titleLayout);
-    streamLayout->addSpacing(5);
+    streamLayout->addSpacing(2);
     streamLayout->addWidget(streamArea, 0, Qt::AlignHCenter);
     streamLayout->addWidget(videoWidget, 0, Qt::AlignHCenter);
 
     QFrame *streamFrame = new QFrame(this);
-    streamFrame->setFixedSize(830, 510);
-    streamFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 20px;");
+    streamFrame->setFixedSize(830, 500);
+    streamFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 0px;");
     streamFrame->setLayout(streamLayout);
 
     connect(streamSelector, &QComboBox::currentTextChanged, this, [=](const QString &mode){
@@ -265,87 +304,114 @@ void MainWindow::setupUI() {
         }
     });
 
-    // bus frame
+    // 🚍 Bus Info Frame
     QFrame *busFrame = new QFrame(this);
-    busFrame->setFixedSize(385, 510);
-    busFrame->setStyleSheet("background-color: #2a2a2a; border-radius: 20px;");
+    busFrame->setFixedSize(350, 500);
+    busFrame->setStyleSheet("background-color: #2a2a2a; border: 1px solid #2a2a2a; border-radius: 0px;");
 
-    QLabel *busNumberHeader = new QLabel("Bus Number", busFrame);
-    QLabel *platformHeader = new QLabel("Platform", busFrame);
-    busNumberHeader->setAlignment(Qt::AlignCenter);
-    platformHeader->setAlignment(Qt::AlignCenter);
-    busNumberHeader->setFixedSize(160, 40);
-    platformHeader->setFixedSize(160, 40);
-    QString headerStyle = R"(
-        background-color: #000;
-        color: white;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: bold;
-    )";
-    busNumberHeader->setStyleSheet(headerStyle);
-    platformHeader->setStyleSheet(headerStyle);
+    // ✅ Header Frame
+    QFrame *headerFrame = new QFrame;
+    headerFrame->setFixedHeight(40);
+    headerFrame->setStyleSheet("background-color: #1c1c1c; border-bottom: 1px solid #333;");
 
-    QHBoxLayout *headerLayout = new QHBoxLayout;
-    headerLayout->setAlignment(Qt::AlignHCenter);
-    headerLayout->addWidget(busNumberHeader);
-    headerLayout->addSpacing(20);
-    headerLayout->addWidget(platformHeader);
+    QLabel *busNumberLabel = new QLabel("Bus Number");
+    QLabel *platformLabel = new QLabel("Platform");
 
-    QVBoxLayout *busFrameLayout = new QVBoxLayout(busFrame);
-    busFrameLayout->setAlignment(Qt::AlignTop);
+    QFont headerFont("Pretendard", 10);
+    busNumberLabel->setFont(headerFont);
+    platformLabel->setFont(headerFont);
+    busNumberLabel->setStyleSheet("color: #bbb;");
+    platformLabel->setStyleSheet("color: #bbb;");
+    busNumberLabel->setAlignment(Qt::AlignCenter);
+    platformLabel->setAlignment(Qt::AlignCenter);
 
+    QHBoxLayout *headerLayout = new QHBoxLayout(headerFrame);
+    headerLayout->setContentsMargins(0, 0, 0, 0);
+    headerLayout->setSpacing(0);
+    headerLayout->addWidget(busNumberLabel);
+    headerLayout->addWidget(platformLabel);
+
+    // ✅ Info Table (헤더 제외 460px)
     infoTable = new QTableWidget(4, 2, busFrame);
-    infoTable->setFixedSize(320, 360);
-    infoTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    infoTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    infoTable->setFixedHeight(460);
+    infoTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    infoTable->setMinimumWidth(busFrame->width());
+    infoTable->setStyleSheet(R"(
+        QTableWidget {
+            background-color: transparent;
+            color: #ddd;
+            border: none;
+            font-size: 13px;
+        }
+        QTableView::item {
+            border-bottom: 1px solid #333;
+            border-right: 1px solid #333;
+            border-left: 1px solid #333;
+            padding: 0px;  /* ✅ 간격 제거 */
+        }
+    )");
+
     infoTable->horizontalHeader()->setVisible(false);
     infoTable->verticalHeader()->setVisible(false);
     infoTable->setShowGrid(false);
-    infoTable->setStyleSheet(
-        "QTableWidget { background-color: transparent; color: white; border: none; }"
-        "QTableView::item { border: none; }"
-        );
+    infoTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    infoTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     infoTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     infoTable->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
+    // ✅ Layout
+    QVBoxLayout *busFrameLayout = new QVBoxLayout(busFrame);
+    busFrameLayout->setContentsMargins(0, 0, 0, 0);
+    busFrameLayout->setSpacing(0);
+    busFrameLayout->addWidget(headerFrame);
+    busFrameLayout->addWidget(infoTable, 1);
+
+    // ✅ Cell 내용 설정
     for (int row = 0; row < 4; ++row) {
         for (int col = 0; col < 2; ++col) {
             QLabel *cell = new QLabel("", infoTable);
             cell->setAlignment(Qt::AlignCenter);
-            QString style = "background-color: transparent; color: white;";
-            QString platformText = "";
+            cell->setContentsMargins(0, 0, 0, 0);  // ✅ 내부 여백 제거
+            QString style;
+
             if (col == 1) {
                 switch (row) {
-                case 0: platformText = "    P1"; break;
-                case 1: platformText = "    P2"; break;
-                case 2: platformText = "    P3"; break;
-                case 3: platformText = "    P4"; break;
+                case 0: cell->setText("P1"); break;
+                case 1: cell->setText("P2"); break;
+                case 2: cell->setText("P3"); break;
+                case 3: cell->setText("P4"); break;
                 }
-                style += "font-size: 18px; font-weight: bold;";
+                style = R"(
+                background-color: transparent;
+                color: white;
+                font-size: 16px;
+                font-weight: bold;
+            )";
+            } else {
+                style = R"(
+                background-color: transparent;
+                color: #ccc;
+                font-size: 13px;
+            )";
             }
-            cell->setText(platformText);
+
             cell->setStyleSheet(style);
             infoTable->setCellWidget(row, col, cell);
         }
     }
 
-    busFrameLayout->addLayout(headerLayout);
-    busFrameLayout->addSpacing(20);
-    busFrameLayout->addWidget(infoTable, 0, Qt::AlignHCenter);
-    busFrameLayout->addSpacing(0);
 
     // 중단 중앙 레이아웃
     QHBoxLayout *middleLayout = new QHBoxLayout;
     middleLayout->addWidget(streamFrame);
-    middleLayout->addSpacing(20);
+    middleLayout->addSpacing(1);
     middleLayout->addWidget(busFrame);
 
     // 전체 메인 레이아웃
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addWidget(topWidget);
+    mainLayout->addSpacing(5);
     mainLayout->addLayout(middleLayout);
-    mainLayout->addSpacing(45);
 
     QWidget *central = new QWidget(this);
     central->setLayout(mainLayout);
@@ -377,7 +443,7 @@ void MainWindow::fetchBusData() {
     */
 
     QUrl url(apiUrlBase);
-    url.setPort(apiPort);  // ✅ 포트 추가!!!
+    url.setPort(apiPort);
     QNetworkRequest request(url);
     QNetworkReply *reply = networkManager->get(request);
 
@@ -401,7 +467,7 @@ void MainWindow::fetchBusData() {
 
             QJsonObject rootObj = doc.object();
 
-            // ✅ online 상태값을 UI에 반영
+            // online 상태값을 UI에 반영
             QJsonArray online = rootObj["online"].toArray();
             if (online.size() == 3) {
                 auto updateLabelStatus = [this](QLabel* label, int status) {
@@ -413,13 +479,13 @@ void MainWindow::fetchBusData() {
                     else if (label == statusCam) name = "Camera";
                     else if (label == statusStm32) name = "Display";
 
-                    if (status == 1) {         // ✅ 정상
+                    if (status == 1) {         // 정상
                         icon = "🟢";
                         color = "limegreen";
-                    } else if (status == 2) {  // ✅ 점검필요
+                    } else if (status == 2) {  // 점검필요
                         icon = "🔴";
                         color = "red";
-                    } else {                   // ✅ 오프라인
+                    } else {                   // 오프라인
                         icon = "⚫";
                         color = "black";
                     }
@@ -463,7 +529,7 @@ void MainWindow::fetchBusData() {
 }
 
 void MainWindow::playRecordedVideo() {
-    QString videoPath = "http://192.168.0.59/videos/output.mp4"; // 실제 URL로 바꾸기
+    QString videoPath = "http://192.168.0.59/videos/output.mp4"; // 실제 URL
     mediaPlayer->setSource(QUrl(videoPath));
     mediaPlayer->play();
 }

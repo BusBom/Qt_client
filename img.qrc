@@ -2,4 +2,12 @@
     <qresource prefix="/img">
         <file>img/images/bus_face.png</file>
     </qresource>
+    <qresource prefix="/">
+        <file>Pretendard-Regular.ttf</file>
+        <file>01HanwhaB.ttf</file>
+        <file>03HanwhaL.ttf</file>
+        <file>05HanwhaGothicR.ttf</file>
+        <file>06HanwhaGothicL.ttf</file>
+        <file>07HanwhaGothicEL.ttf</file>
+    </qresource>
 </RCC>

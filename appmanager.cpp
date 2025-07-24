@@ -16,7 +16,7 @@ AppManager::AppManager(QWidget *parent)
 
     setCurrentWidget(loginPage);  // 첫 화면 = 로그인
 
-    // ✅ 시그널 연결
+    // 시그널 연결
     connect(loginPage, &LoginPage::switchToSignupPage, this, &AppManager::showSignupPage);
     connect(loginPage, &LoginPage::loginSuccess, this, &AppManager::loginSuccess);
     connect(signUpPage, &SignUpPage::switchToLoginPage, this, &AppManager::showLoginPage);

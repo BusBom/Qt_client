@@ -39,6 +39,11 @@ qt_add_executable(Busbomproject
     roi_frame.h roi_frame.cpp
 )
 
+qt_add_resources(RESOURCES img.qrc)
+qt_add_resources(AppResources img.qrc)
+target_sources(Busbomproject PRIVATE ${AppResources})
+
+
 qt_add_translations(
     TARGETS Busbomproject
     TS_FILES Busbomproject_ko_KR.ts

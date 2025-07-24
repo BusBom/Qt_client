@@ -70,8 +70,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     formWrapper->setLayout(cameraLayout);
 
     applyBtn = new QPushButton("Apply");
-    applyBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px;");
-    applyBtn->setFixedSize(90, 25);
+    applyBtn->setStyleSheet("background-color: #2c3e50; color: white; border-radius: 10px; padding-top: 1px;");
+    applyBtn->setFixedSize(65, 25);
     QHBoxLayout *applyLayout = new QHBoxLayout;
     applyLayout->addStretch();
     applyLayout->addWidget(applyBtn);
@@ -83,12 +83,12 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     cameraLayoutContainer->addLayout(applyLayout);
 
     originalFrame = new QLabel("원본 영상");
-    originalFrame->setFixedSize(320, 240);
+    originalFrame->setFixedSize(350, 270);
     originalFrame->setStyleSheet("background-color: black; border: 1px solid gray;");
     originalFrame->setAlignment(Qt::AlignCenter);
 
     previewVideo = new QVideoWidget;
-    previewVideo->setFixedSize(320, 240);
+    previewVideo->setFixedSize(350, 270);
     previewVideo->setStyleSheet("background-color: black; border: 1px solid gray;");
     previewVideo->setAspectRatioMode(Qt::KeepAspectRatio);
 
@@ -108,12 +108,11 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     roiCanvas->setStyleSheet("background-color: black; border: 1px solid gray;");
     roiCanvas->setAlignment(Qt::AlignCenter);
 
-    // 🆕 가이드 라벨 추가
+    // 가이드 라벨 추가
     QLabel *roiGuideLabel = new QLabel("※ 플랫폼 상 가장 앞 쪽이 1번 플랫폼\n※ LT, RT, RB, LB 순서로 ROI 지정", this);
     roiGuideLabel->setStyleSheet("color: lightgray; font-size: 15px;");
     roiGuideLabel->setAlignment(Qt::AlignLeft);
 
-    // roiCanvas + 가이드를 세로로 묶기
     QVBoxLayout *roiCanvasWithGuideLayout = new QVBoxLayout;
     roiCanvasWithGuideLayout->setSpacing(4);
     roiCanvasWithGuideLayout->addWidget(roiCanvas, 0, Qt::AlignTop);
@@ -141,7 +140,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     roiMainLayout->addSpacing(5);
     roiMainLayout->addLayout(roiSideLayout);
 
-    // ✅ roiCanvas → roiPolygons 반영 및 UI 갱신 연결
+    // roiCanvas → roiPolygons 반영 및 UI 갱신 연결
     connect(roiCanvas, &RoiFrame::roiUpdated, this, [=]() {
         roiPolygons = roiCanvas->getRois();
         updateRoiDisplay();
@@ -172,12 +171,12 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     stackedPages->addWidget(new QWidget());  // Home placeholder
 
     updateBtn = new QPushButton("Update", this);
-    updateBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px;");
+    updateBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px; padding-top: 1px;");
     updateBtn->setFixedSize(90, 25);
     connect(updateBtn, &QPushButton::clicked, this, &SettingsDialog::onUpdateClicked);
 
     cancelBtn = new QPushButton("Cancel", this);
-    cancelBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px;");
+    cancelBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px; padding-top: 1px;");
     cancelBtn->setFixedSize(90, 25);
     connect(cancelBtn, &QPushButton::clicked, this, &SettingsDialog::onCancelClicked);
 
@@ -240,10 +239,12 @@ SettingsDialog::SettingsDialog(QWidget *parent)
             });
         });
     });
+    pageSelector->setCurrentRow(0); // 네트워크 설정 탭을 기본 선택
+    onPageChanged(0);               // Cancel 버튼 텍스트도 함께 초기화
 }
 
 
-// ✅ ROI 정보 표시용 함수 추가
+// ROI 정보 표시용 함수 추가
 void SettingsDialog::updateRoiDisplay() {
     platformCountLabel->setText(QString("플랫폼 개수: %1").arg(roiPolygons.size()));
 
@@ -272,11 +273,11 @@ void SettingsDialog::onPageChanged(int index) {
     }
     stackedPages->setCurrentIndex(index);
 
-    if (index == 2) {  // ROI 설정 탭
+    if (index == 2) {
         cancelBtn->setText("Reset ROI");
 
-        // ⬇️ 이미지 캡처 받아오기
-        QNetworkRequest imgReq(QUrl("http://192.168.0.59/cgi-bin/capture.cgi"));
+        // 이미지 캡처 받아오기
+        QNetworkRequest imgReq(QUrl("http://192.168.0.33/cgi-bin/capture.cgi"));
         QNetworkReply *imgReply = netManager->get(imgReq);
         connect(imgReply, &QNetworkReply::finished, this, [=]() {
             imgReply->deleteLater();
@@ -288,8 +289,9 @@ void SettingsDialog::onPageChanged(int index) {
                 qWarning() << "❌ 캡처 이미지 로딩 실패";
             }
         });
+    } else {
+        cancelBtn->setText("Cancel");
     }
-
 }
 
 void SettingsDialog::onUpdateClicked() {
@@ -357,7 +359,7 @@ void SettingsDialog::onCancelClicked() {
 }
 
 // ---- ClickableSlider 구현 ----
-ClickableSlider::ClickableSlider(Qt::Orientation o, QWidget *p) : QSlider(o, p) { setMinimumHeight(30); }
+ClickableSlider::ClickableSlider(Qt::Orientation o, QWidget *p) : QSlider(o, p) { setMinimumHeight(32); }
 
 void ClickableSlider::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
@@ -377,7 +379,7 @@ void ClickableSlider::paintEvent(QPaintEvent *e) {
     QString valueText = QString::number(value());
     painter.setFont(QFont("", 8));
     painter.setPen(Qt::white);
-    painter.drawText(QRect(width() - 35, 15, 30, 20), Qt::AlignRight, valueText);
+    painter.drawText(QRect(width() - 35, -3, 30, 20), Qt::AlignRight, valueText);
 }
 
 // --- Getters ---

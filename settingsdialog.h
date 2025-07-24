@@ -25,7 +25,7 @@
 #include <QVector>
 #include <QPoint>
 
-// ✅ ROI 설정용 커스텀 위젯
+// ROI 설정용 커스텀 위젯
 #include "roi_frame.h"
 
 class ClickableSlider : public QSlider
@@ -109,7 +109,7 @@ private:
     QVBoxLayout *cameraLayoutContainer;
 
     // ROI 설정
-    RoiFrame *roiCanvas;                        // ✅ QLabel → RoiFrame 교체
+    RoiFrame *roiCanvas;
     QLabel *platformCountLabel;
     QVector<QLabel*> coordLabels;
     QVector<QVector<QPoint>> roiPolygons;

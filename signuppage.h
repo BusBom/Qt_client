@@ -26,6 +26,7 @@ private:
     QLineEdit *passwordConfirmInput;
     QPushButton *signUpBtn;
     QLabel *loginLink;
+    QLabel *passwordMismatchLabel;
 };
 
 #endif // SIGNUPPAGE_H

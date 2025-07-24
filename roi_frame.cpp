@@ -41,8 +41,6 @@ void RoiFrame::paintEvent(QPaintEvent *event)
     pen.setWidth(2);
     painter.setPen(pen);
     painter.drawPixmap(rect(), background);  // 전체 영역에 배경 표시
-    // 이후 ROI 선분 그리기 코드는 여기에 이어짐
-
 
     // 이미 완료된 ROI들
     for (const QVector<QPoint> &roi : rois) {
