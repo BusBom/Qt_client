@@ -9,5 +9,9 @@
         <file>05HanwhaGothicR.ttf</file>
         <file>06HanwhaGothicL.ttf</file>
         <file>07HanwhaGothicEL.ttf</file>
+        <file>icons/arrow.png</file>
+        <file>icons/stream.png</file>
+        <file>icons/settings.png</file>
+        <file>icons/busimage.png</file>
     </qresource>
 </RCC>

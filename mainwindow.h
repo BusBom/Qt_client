@@ -36,6 +36,7 @@ private slots:
 private:
     const QString PATH = QCoreApplication::applicationDirPath();
     Ui::MainWindow *ui;
+    QSslConfiguration createSslConfig();
 
     SettingsDialog *settingsDlg;
     QComboBox *stopSelector;

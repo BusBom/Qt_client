@@ -1,4 +1,12 @@
 #include "settingsdialog.h"
+#include <QSslConfiguration>
+#include <QSslCertificate>
+#include <QSslKey>
+#include <QSslSocket>
+#include <QFile>
+#include <QCoreApplication>
+#include <QBuffer>
+#include <QImageReader>
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QNetworkRequest>
@@ -19,34 +27,107 @@
 #include <QLabel>
 #include <QDebug>
 #include <QJsonArray>
+#include <QFrame>
 #include "roi_frame.h"
+
 RoiFrame *roiCanvas;
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
 {
+    QFont hanwhaFont("hanwhaGothic EL");
+    setFont(hanwhaFont);
+
     netManager = new QNetworkAccessManager(this);
 
+    // 좌측 메뉴 리스트
     pageSelector = new QListWidget(this);
-    pageSelector->addItem("🌐 네트워크 설정");
-    pageSelector->addItem("🎥 카메라 설정");
-    pageSelector->addItem("🧭 ROI 설정");
-    pageSelector->addItem("🌙 절전모드 설정");
-    pageSelector->addItem("🏚 Home");
+    pageSelector->addItem("🖧 네트워크 설정");
+    pageSelector->addItem("⧉ 카메라 설정");
+    pageSelector->addItem("✦ ROI 설정");
+    pageSelector->addItem("☾ 절전모드 설정");
     pageSelector->setFixedWidth(150);
-    pageSelector->setStyleSheet("background-color: #2a2a2a; color: white;");
+    pageSelector->setStyleSheet(R"(
+        QListWidget {
+            background-color: #1e1e1e;
+            border: none;
+            color: white;
+            font-size: 13px;
+            outline: 0;
+        }
+        QListWidget::item {
+            padding: 14px 8px;
+            border-bottom: 1px solid #333;
+        }
+        QListWidget::item:selected {
+            color: #f37321;
+            font-weight: bold;
+            background-color: #1e1e1e;
+        }
+        QListWidget::item::focus {
+            outline: none;
+        }
+
+        QListWidget::item:!active {
+            outline: none;
+        }
+
+        QListWidget::item:selected:active {
+            outline: none;
+        }
+    )");
     connect(pageSelector, &QListWidget::currentRowChanged, this, &SettingsDialog::onPageChanged);
+
+    // 중앙 세로 구분선
+    QFrame *vLine = new QFrame;
+    vLine->setFrameShape(QFrame::VLine);
+    vLine->setFrameShadow(QFrame::Plain);
+    vLine->setStyleSheet("color: #444;");
+    vLine->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    vLine->setLineWidth(1);
+
+    auto makeSection = [](const QString &title, QWidget *content) {
+        QLabel *titleLabel = new QLabel(title);
+        titleLabel->setStyleSheet("color: white; font-size: 15px; font-weight: bold; margin-left: 8px; ");
+        titleLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+
+        QFrame *hLine = new QFrame;
+        hLine->setFrameShape(QFrame::HLine);
+        hLine->setFrameShadow(QFrame::Sunken);
+        hLine->setStyleSheet("background-color: #444; border: none;");
+        hLine->setFixedHeight(1);
+
+        content->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+
+        QVBoxLayout *layout = new QVBoxLayout;
+        layout->setContentsMargins(0, 10, 0, 0);
+        layout->setSpacing(4);
+        layout->addWidget(titleLabel);
+        layout->addWidget(hLine);
+        layout->addWidget(content);
+        layout->addStretch();
+
+        QWidget *wrapper = new QWidget;
+        wrapper->setLayout(layout);
+        return wrapper;
+    };
+
 
     // 🌐 네트워크 설정
     apiUrlEdit = new QLineEdit(this);
     portEdit = new QLineEdit(this);
     autoConnectCheck = new QCheckBox("Auto Connect", this);
+
     QFormLayout *networkLayout = new QFormLayout;
-    networkLayout->addRow("API URL :", apiUrlEdit);
-    networkLayout->addRow("Port :", portEdit);
+    networkLayout->addRow("API URL:", apiUrlEdit);
+    networkLayout->addRow("Port:", portEdit);
     networkLayout->addRow(autoConnectCheck);
-    QWidget *networkPage = new QWidget;
-    networkPage->setLayout(networkLayout);
+
+    QWidget *networkWidget = new QWidget;
+    networkWidget->setLayout(networkLayout);
+
+    QWidget *networkPage = makeSection("네트워크 설정", networkWidget);
+
 
     // 🎥 카메라 설정
     brightnessSlider = new ClickableSlider(Qt::Horizontal, this);
@@ -58,145 +139,195 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     saturationSlider = new ClickableSlider(Qt::Horizontal, this);
     saturationSlider->setRange(0, 100);
 
-    QFormLayout *cameraLayout = new QFormLayout;
-    cameraLayout->setVerticalSpacing(20);
-    cameraLayout->setHorizontalSpacing(15);
-    cameraLayout->setContentsMargins(10, 10, 10, 0);
-    cameraLayout->addRow("Brightness:", brightnessSlider);
-    cameraLayout->addRow("Contrast:", contrastSlider);
-    cameraLayout->addRow("Exposure:", exposureSlider);
-    cameraLayout->addRow("Saturation:", saturationSlider);
-    QWidget *formWrapper = new QWidget;
-    formWrapper->setLayout(cameraLayout);
+    QString sliderStyle = R"(
+        QSlider::groove:horizontal {
+            height: 4px;
+            background: white;
+            margin: 0px;
+        }
+        QSlider::handle:horizontal {
+            background: rgba(200, 200, 200, 0.6);
+            background: white;
+            width: 8px;
+            height: 18px;
+            margin: -5px 0;
+            border-radius: 0px;
+        }
+    )";
+    for (ClickableSlider *slider : {
+             brightnessSlider, contrastSlider, exposureSlider, saturationSlider
+         }) {
+        slider->setStyleSheet(sliderStyle);
+    }
+
+
+    QFormLayout *cameraForm = new QFormLayout;
+    cameraForm->addRow("Brightness:", brightnessSlider);
+    cameraForm->addRow("Contrast:", contrastSlider);
+    cameraForm->addRow("Exposure:", exposureSlider);
+    cameraForm->addRow("Saturation:", saturationSlider);
 
     applyBtn = new QPushButton("Apply");
-    applyBtn->setStyleSheet("background-color: #2c3e50; color: white; border-radius: 10px; padding-top: 1px;");
+    applyBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #3a3a3a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 13px;
+            padding: 4px 10px;
+        }
+        QPushButton:focus {
+            outline: none;
+        }
+    )");
+
     applyBtn->setFixedSize(65, 25);
+
     QHBoxLayout *applyLayout = new QHBoxLayout;
     applyLayout->addStretch();
     applyLayout->addWidget(applyBtn);
-    applyLayout->setContentsMargins(0, 0, 15, 5);
+    applyLayout->setContentsMargins(0, 0, 5, 0);
 
-    cameraLayoutContainer = new QVBoxLayout;
-    cameraLayoutContainer->setSpacing(0);
-    cameraLayoutContainer->addWidget(formWrapper);
-    cameraLayoutContainer->addLayout(applyLayout);
-
+    // 📷 원본 영상
     originalFrame = new QLabel("원본 영상");
-    originalFrame->setFixedSize(350, 270);
+    originalFrame->setFixedSize(370, 270);
     originalFrame->setStyleSheet("background-color: black; border: 1px solid gray;");
     originalFrame->setAlignment(Qt::AlignCenter);
 
+    // 📷 미리보기 영상
     previewVideo = new QVideoWidget;
-    previewVideo->setFixedSize(350, 270);
+    previewVideo->setFixedSize(370, 270);
     previewVideo->setStyleSheet("background-color: black; border: 1px solid gray;");
-    previewVideo->setAspectRatioMode(Qt::KeepAspectRatio);
 
     previewPlayer = new QMediaPlayer(this);
     previewPlayer->setVideoOutput(previewVideo);
 
+    // 📷 영상 두 개를 좌우로 딱 붙임
     QHBoxLayout *previewLayout = new QHBoxLayout;
+    previewLayout->setSpacing(0);
+    previewLayout->setContentsMargins(0, 0, 0, 0);
     previewLayout->addWidget(originalFrame);
     previewLayout->addWidget(previewVideo);
-    cameraLayoutContainer->addLayout(previewLayout);
-    QWidget *cameraPage = new QWidget;
-    cameraPage->setLayout(cameraLayoutContainer);
+
+    // 전체 카메라 페이지 구성
+    QVBoxLayout *cameraLayout = new QVBoxLayout;
+    cameraLayout->addLayout(cameraForm);
+    cameraLayout->addLayout(applyLayout);
+    cameraLayout->addLayout(previewLayout);
+
+    QWidget *cameraContent = new QWidget;
+    cameraContent->setLayout(cameraLayout);
+    QWidget *cameraPage = makeSection("카메라 설정", cameraContent);
 
     // 🧭 ROI 설정
-    roiCanvas = new RoiFrame(this);  // ✅ 새로 만든 RoiFrame 클래스 사용
+    roiCanvas = new RoiFrame(this);
     roiCanvas->setFixedSize(640, 360);
     roiCanvas->setStyleSheet("background-color: black; border: 1px solid gray;");
     roiCanvas->setAlignment(Qt::AlignCenter);
 
-    // 가이드 라벨 추가
     QLabel *roiGuideLabel = new QLabel("※ 플랫폼 상 가장 앞 쪽이 1번 플랫폼\n※ LT, RT, RB, LB 순서로 ROI 지정", this);
     roiGuideLabel->setStyleSheet("color: lightgray; font-size: 15px;");
-    roiGuideLabel->setAlignment(Qt::AlignLeft);
 
-    QVBoxLayout *roiCanvasWithGuideLayout = new QVBoxLayout;
-    roiCanvasWithGuideLayout->setSpacing(4);
-    roiCanvasWithGuideLayout->addWidget(roiCanvas, 0, Qt::AlignTop);
-    roiCanvasWithGuideLayout->addWidget(roiGuideLabel);
-
+    QVBoxLayout *roiLeft = new QVBoxLayout;
+    roiLeft->addWidget(roiCanvas);
+    roiLeft->addWidget(roiGuideLabel);
 
     platformCountLabel = new QLabel("플랫폼 개수: 0");
     platformCountLabel->setStyleSheet("color: white; font-weight: bold;");
-
+    QVBoxLayout *roiRight = new QVBoxLayout;
+    roiRight->addWidget(platformCountLabel);
     for (int i = 0; i < 4; ++i) {
-        QLabel *label = new QLabel();
+        QLabel *label = new QLabel;
         label->setStyleSheet("color: white;");
         coordLabels.append(label);
+        roiRight->addWidget(label);
     }
+    roiRight->addStretch();
 
-    QVBoxLayout *roiSideLayout = new QVBoxLayout;
-    roiSideLayout->setContentsMargins(0, 7, 0, 0);
-    roiSideLayout->addWidget(platformCountLabel);
-    for (QLabel *label : coordLabels)
-        roiSideLayout->addWidget(label);
-    roiSideLayout->addStretch();
+    QHBoxLayout *roiBody = new QHBoxLayout;
+    roiBody->addLayout(roiLeft);
+    roiBody->addSpacing(10);
+    roiBody->addLayout(roiRight);
 
-    QHBoxLayout *roiMainLayout = new QHBoxLayout;
-    roiMainLayout->addLayout(roiCanvasWithGuideLayout);
-    roiMainLayout->addSpacing(5);
-    roiMainLayout->addLayout(roiSideLayout);
+    QWidget *roiContent = new QWidget;
+    roiContent->setLayout(roiBody);
+    QWidget *roiPage = makeSection("ROI 설정", roiContent);
 
-    // roiCanvas → roiPolygons 반영 및 UI 갱신 연결
     connect(roiCanvas, &RoiFrame::roiUpdated, this, [=]() {
         roiPolygons = roiCanvas->getRois();
         updateRoiDisplay();
     });
 
-    QWidget *roiPage = new QWidget;
-    roiPage->setLayout(roiMainLayout);
-
-    // 🌙 절전모드
+    // 🌙 절전모드 설정
     sleepStartEdit = new QTimeEdit(this);
     sleepEndEdit = new QTimeEdit(this);
     sleepStartEdit->setDisplayFormat("HH:mm");
     sleepEndEdit->setDisplayFormat("HH:mm");
     sleepStartEdit->setTime(QTime::fromString("01:00", "HH:mm"));
     sleepEndEdit->setTime(QTime::fromString("05:00", "HH:mm"));
-    QFormLayout *sleepLayout = new QFormLayout;
-    sleepLayout->addRow("절전모드 시작 시각:", sleepStartEdit);
-    sleepLayout->addRow("절전모드 종료 시각:", sleepEndEdit);
-    QWidget *sleepPage = new QWidget;
-    sleepPage->setLayout(sleepLayout);
 
-    // 스택 페이지 연결
+    QFormLayout *sleepForm = new QFormLayout;
+    sleepForm->addRow("절전모드 시작 시각:", sleepStartEdit);
+    sleepForm->addRow("절전모드 종료 시각:", sleepEndEdit);
+
+    QWidget *sleepContent = new QWidget;
+    sleepContent->setLayout(sleepForm);
+    QWidget *sleepPage = makeSection("절전모드 설정", sleepContent);
+
+    // ✅ stackedPages에 각 페이지 추가
     stackedPages = new QStackedWidget(this);
     stackedPages->addWidget(networkPage);
     stackedPages->addWidget(cameraPage);
     stackedPages->addWidget(roiPage);
     stackedPages->addWidget(sleepPage);
-    stackedPages->addWidget(new QWidget());  // Home placeholder
 
+    // ✅ 하단 버튼 영역
     updateBtn = new QPushButton("Update", this);
-    updateBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px; padding-top: 1px;");
-    updateBtn->setFixedSize(90, 25);
-    connect(updateBtn, &QPushButton::clicked, this, &SettingsDialog::onUpdateClicked);
-
     cancelBtn = new QPushButton("Cancel", this);
-    cancelBtn->setStyleSheet("background-color: #f37321; color: white; border-radius: 10px; padding-top: 1px;");
-    cancelBtn->setFixedSize(90, 25);
+    QString flatBtnStyle = R"(
+        QPushButton {
+            background-color: #f37321;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 0px;
+            font-size: 13px;
+            height: 25px;
+        }
+        QPushButton:focus {
+            outline: none;
+        }
+    )";
+
+    for (QPushButton *btn : {updateBtn, cancelBtn}) {
+        btn->setStyleSheet(flatBtnStyle);
+        btn->setFixedSize(90, 25);
+    }
+
+    connect(updateBtn, &QPushButton::clicked, this, &SettingsDialog::onUpdateClicked);
     connect(cancelBtn, &QPushButton::clicked, this, &SettingsDialog::onCancelClicked);
 
+    QHBoxLayout *bottomBtns = new QHBoxLayout;
+    bottomBtns->addStretch();
+    bottomBtns->addWidget(cancelBtn);
+    bottomBtns->addWidget(updateBtn);
+    bottomBtns->setContentsMargins(0, 0, 15, 15);
+
     QVBoxLayout *rightLayout = new QVBoxLayout;
-    QHBoxLayout *rightHLayout = new QHBoxLayout;
-    rightHLayout->addStretch();
-    rightHLayout->addWidget(cancelBtn);
-    rightHLayout->addWidget(updateBtn);
     rightLayout->addWidget(stackedPages);
-    rightHLayout->setContentsMargins(0, 0, 15, 15);  // 좌, 상, 우, 하
-    rightLayout->addLayout(rightHLayout);
+    rightLayout->addLayout(bottomBtns);
 
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
     mainLayout->addWidget(pageSelector);
+    mainLayout->addWidget(vLine);
     mainLayout->addLayout(rightLayout);
+
     setLayout(mainLayout);
     setWindowTitle("Settings");
-    resize(900, 560);
+    resize(950, 560);
 
-    // 설정값 백업
+    // 초기 설정값 백업
     originalApiUrl = apiUrlEdit->text();
     originalPort = portEdit->text().toUInt();
     originalAutoConnect = autoConnectCheck->isChecked();
@@ -205,42 +336,51 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     originalExposure = exposureSlider->value();
     originalSaturation = saturationSlider->value();
 
-    // Apply 프리뷰 기능 연결
-    connect(applyBtn, &QPushButton::clicked, this, [=]() {
-        QJsonObject cameraObj {
-            {"brightness", brightnessSlider->value()},
-            {"contrast", contrastSlider->value()},
-            {"exposure", exposureSlider->value()},
-            {"saturation", saturationSlider->value()},
-            {"preview", true}
-        };
-        QJsonObject body {{"camera", cameraObj}};
-        QNetworkRequest req(QUrl("http://192.168.0.59/cgi-bin/config.cgi"));
-        req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-        QNetworkReply *reply = netManager->post(req, QJsonDocument(body).toJson());
+    pageSelector->setCurrentRow(0);
+    onPageChanged(0);
 
-        connect(reply, &QNetworkReply::finished, this, [=]() {
-            reply->deleteLater();
-            QByteArray responseData = reply->readAll();
-            QPixmap pix;
-            if (pix.loadFromData(responseData)) {
-                originalFrame->setPixmap(pix.scaled(originalFrame->size(), Qt::KeepAspectRatio));
-                qInfo() << "✅ Apply - 원본 이미지 렌더링 완료";
-            } else {
-                qWarning() << "❌ Apply - JPEG 응답 파싱 실패";
-            }
+}
 
-            QUrl streamUrl("rtsp://192.168.0.59:8554/stream");
-            previewPlayer->stop();
-            previewPlayer->setSource(streamUrl);
-            previewPlayer->play();
-            connect(previewPlayer, &QMediaPlayer::errorOccurred, this, [](QMediaPlayer::Error err) {
-                qWarning() << "❌ Preview 스트림 오류:" << err;
-            });
-        });
-    });
-    pageSelector->setCurrentRow(0); // 네트워크 설정 탭을 기본 선택
-    onPageChanged(0);               // Cancel 버튼 텍스트도 함께 초기화
+QSslConfiguration SettingsDialog::createSslConfig() {
+    QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
+
+    qDebug() << "📄 인증서/키/CA 경로:"
+             << QCoreApplication::applicationDirPath() + "/client.cert.pem"
+             << QCoreApplication::applicationDirPath() + "/client.key.pem"
+             << QCoreApplication::applicationDirPath() + "/ca.cert.pem";
+
+
+    // 클라이언트 인증서
+    QSslCertificate cert;
+    QFile certFile(QCoreApplication::applicationDirPath() + "/client.cert.pem");
+    if (certFile.open(QIODevice::ReadOnly))
+        cert = QSslCertificate(certFile.readAll(), QSsl::Pem);
+    else
+        qWarning() << " 클라이언트 인증서 로드 실패";
+
+    // 클라이언트 키
+    QSslKey key;
+    QFile keyFile(QCoreApplication::applicationDirPath() + "/client.key.pem");
+    if (keyFile.open(QIODevice::ReadOnly))
+        key = QSslKey(keyFile.readAll(), QSsl::Rsa, QSsl::Pem);
+    else
+        qWarning() << " 클라이언트 개인키 로드 실패";
+
+    // CA 인증서
+    QList<QSslCertificate> caCerts;
+    QFile caFile(QCoreApplication::applicationDirPath() + "/ca.cert.pem");
+    if (caFile.open(QIODevice::ReadOnly))
+        caCerts = QSslCertificate::fromData(caFile.readAll(), QSsl::Pem);
+    else
+        qWarning() << " CA 인증서 로드 실패";
+
+    sslConfig.setLocalCertificate(cert);
+    sslConfig.setPrivateKey(key);
+    sslConfig.setCaCertificates(caCerts);
+    sslConfig.setPeerVerifyMode(QSslSocket::VerifyPeer);
+    sslConfig.setProtocol(QSsl::TlsV1_2);
+
+    return sslConfig;
 }
 
 
@@ -265,7 +405,6 @@ void SettingsDialog::updateRoiDisplay() {
     }
 }
 
-
 void SettingsDialog::onPageChanged(int index) {
     if (index == 4) {
         close();
@@ -276,23 +415,39 @@ void SettingsDialog::onPageChanged(int index) {
     if (index == 2) {
         cancelBtn->setText("Reset ROI");
 
-        // 이미지 캡처 받아오기
-        QNetworkRequest imgReq(QUrl("http://192.168.0.33/cgi-bin/capture.cgi"));
+        // SSL + 인증서 설정
+        QNetworkRequest imgReq(QUrl("https://192.168.0.50/cgi-bin/capture.cgi"));
+        imgReq.setSslConfiguration(createSslConfig());
+
         QNetworkReply *imgReply = netManager->get(imgReq);
         connect(imgReply, &QNetworkReply::finished, this, [=]() {
             imgReply->deleteLater();
-            QPixmap pix;
-            if (pix.loadFromData(imgReply->readAll())) {
-                roiCanvas->setBackgroundImage(pix);  // roiCanvas에 QPixmap 설정
+            QByteArray responseData = imgReply->readAll();
+            qDebug() << "📦 수신 데이터 크기:" << responseData.size();
+
+            // QImageReader로 MIME 명시 (JPEG 지정)
+            QBuffer buffer(&responseData);
+            buffer.open(QIODevice::ReadOnly);
+            QImageReader reader(&buffer, "JPEG");
+            QImage img = reader.read();
+
+            if (!img.isNull()) {
+                roiCanvas->setBackgroundImage(QPixmap::fromImage(img));
                 qDebug() << "✅ 캡처 이미지 수신 및 적용 완료";
             } else {
-                qWarning() << "❌ 캡처 이미지 로딩 실패";
+                qDebug() << "❌ 캡처 이미지 로딩 실패";
+                QFile f("capture_debug_failed.jpg");
+                f.open(QIODevice::WriteOnly);
+                f.write(responseData);
+                f.close();
+                qDebug() << "📄 capture_debug_failed.jpg 저장 완료";
             }
         });
     } else {
         cancelBtn->setText("Cancel");
     }
 }
+
 
 void SettingsDialog::onUpdateClicked() {
     if (stackedPages->currentIndex() == 1) {
@@ -303,8 +458,10 @@ void SettingsDialog::onUpdateClicked() {
             {"saturation", saturationSlider->value()},
             {"preview", false}
         };
-        QNetworkRequest req(QUrl("http://192.168.0.59/cgi-bin/config.cgi"));
+        QNetworkRequest req(QUrl("https://192.168.0.82/cgi-bin/config.cgi"));
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+        req.setSslConfiguration(createSslConfig());  // ✅ SSL 인증 설정
+
         netManager->post(req, QJsonDocument(QJsonObject{{"camera", cameraObj}}).toJson());
     }
     accept();
@@ -329,10 +486,11 @@ void SettingsDialog::onUpdateClicked() {
         QJsonObject body;
         body["stop_rois"] = stopRois;
 
-        QNetworkRequest req(QUrl("http://192.168.0.59/cgi-bin/roi-setup.cgi"));
+        QNetworkRequest req(QUrl("https://192.168.0.82/cgi-bin/roi-setup.cgi"));
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-        netManager->post(req, QJsonDocument(body).toJson());
+        req.setSslConfiguration(createSslConfig());  // ✅ SSL 인증 설정
 
+        netManager->post(req, QJsonDocument(body).toJson());
         qDebug() << "✅ ROI 설정 전송 (원본 좌표 기준):" << body;
     }
 

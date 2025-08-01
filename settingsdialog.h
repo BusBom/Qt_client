@@ -78,6 +78,7 @@ private slots:
     void onPageChanged(int index);
 
 private:
+    QSslConfiguration createSslConfig();
     // 사이드바
     QListWidget *pageSelector;
     QStackedWidget *stackedPages;

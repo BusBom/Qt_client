@@ -8,7 +8,7 @@ VideoThread::VideoThread(QObject *parent)
 void VideoThread::run() {
     qDebug() << "?? VideoThread run() started";
 
-    cv::VideoCapture cap("rtsp://192.168.0.59:8554/stream", cv::CAP_FFMPEG);
+    cv::VideoCapture cap("rtsp://192.168.0.64/profile2/media.smp", cv::CAP_FFMPEG);
     if (!cap.isOpened()) {
         qWarning() << "❌ VideoCapture open 실패";
         return;

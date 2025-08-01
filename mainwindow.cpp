@@ -2,6 +2,11 @@
 #include "settingsdialog.h"
 #include "ui_mainwindow.h"
 
+#include <QSslConfiguration>
+#include <QSslCertificate>
+#include <QSslKey>
+#include <QSslSocket>
+#include <QFile>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QHeaderView>
@@ -27,6 +32,42 @@
 #include <QJsonArray>
 #include <QNetworkReply>
 
+QSslConfiguration MainWindow::createSslConfig() {
+    QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
+
+    // 클라이언트 인증서
+    QSslCertificate cert;
+    QFile certFile(QCoreApplication::applicationDirPath() + "/client.cert.pem");
+    if (certFile.open(QIODevice::ReadOnly))
+        cert = QSslCertificate(certFile.readAll(), QSsl::Pem);
+    else
+        qWarning() << "❌ 클라이언트 인증서 로드 실패";
+
+    // 클라이언트 키
+    QSslKey key;
+    QFile keyFile(QCoreApplication::applicationDirPath() + "/client.key.pem");
+    if (keyFile.open(QIODevice::ReadOnly))
+        key = QSslKey(keyFile.readAll(), QSsl::Rsa, QSsl::Pem);
+    else
+        qWarning() << "❌ 클라이언트 개인키 로드 실패";
+
+    // CA 인증서
+    QList<QSslCertificate> caCerts;
+    QFile caFile(QCoreApplication::applicationDirPath() + "/ca.cert.pem");
+    if (caFile.open(QIODevice::ReadOnly))
+        caCerts = QSslCertificate::fromData(caFile.readAll(), QSsl::Pem);
+    else
+        qWarning() << "❌ CA 인증서 로드 실패";
+
+    sslConfig.setLocalCertificate(cert);
+    sslConfig.setPrivateKey(key);
+    sslConfig.setCaCertificates(caCerts);
+    sslConfig.setPeerVerifyMode(QSslSocket::VerifyPeer);
+    sslConfig.setProtocol(QSsl::TlsV1_2);
+
+    return sslConfig;
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -34,7 +75,7 @@ MainWindow::MainWindow(QWidget *parent)
     this->setFixedSize(1240, 650);
     setStyleSheet("background-color: #1e1e1e; color: #ccc;");
 
-    QIcon icon(PATH + "/images/bus_face.png");
+    QIcon icon(":/icons/busimage.png");
     setWindowIcon(icon);
 
     setupUI();
@@ -62,8 +103,9 @@ MainWindow::MainWindow(QWidget *parent)
         QJsonObject body;
         body["camera"] = cameraObj;
 
-        QNetworkRequest request(QUrl("http://192.168.0.59/cgi-bin/config.cgi"));
+        QNetworkRequest request(QUrl("https://192.168.0.82/cgi-bin/config.cgi")); // 수정됨: http → https
         request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+        request.setSslConfiguration(createSslConfig());
 
         QNetworkReply *reply = networkManager->post(request, QJsonDocument(body).toJson());
 
@@ -93,14 +135,16 @@ MainWindow::MainWindow(QWidget *parent)
     connect(busTimer, &QTimer::timeout, this, &MainWindow::fetchBusData);
     busTimer->start(1000);
 
-    apiUrlBase = "http://192.168.0.59/cgi-bin/sequence.cgi";
-    apiPort = 80;
+    apiUrlBase = "https://192.168.0.50/cgi-bin/sequence.cgi";  // 수정됨
+    apiPort = 443;  //  https 기본 포트로 설정 권장
     autoConnect = false;
+
+    emit streamSelector->currentTextChanged(streamSelector->currentText());
 }
 
 void MainWindow::setupUI() {
     // 🚍 Title + Icon
-    QLabel *titleImgLabel = new QLabel("<img src='" + PATH + "/images/bus_face.png' width=32 height=32>");
+    QLabel *titleImgLabel = new QLabel("<img src=':/icons/busimage.png' width=32 height=32>");
     titleImgLabel->setContentsMargins(3, 0, 0, 0);  // 왼쪽에서 오른쪽으로 3px 이동
     QLabel *titleTextLabel = new QLabel("<b style='font-size:22px; color: white;'> Live Dashboard</b>");
     titleTextLabel->setContentsMargins(0, 0, 0, 2);
@@ -112,21 +156,37 @@ void MainWindow::setupUI() {
     stopSelector->setFixedHeight(35);
     stopSelector->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     stopSelector->setStyleSheet(R"(
-    QComboBox {
-        background-color: #2c2c2c;
-        border: 0px solid #444;
-        color: #ccc;
-        padding: 4px 8px;
-    }
-    QComboBox QAbstractItemView {
-        background-color: #1e1e1e;
-        color: #ccc;
-        selection-background-color: #444;
-        border: none;
-        outline: none;
-        box-shadow: none;
-    }
-)");
+        QComboBox {
+            font-size: 12px;
+            background-color: #313131;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            padding-right: 30px;  /* 드롭다운 화살표 여백 */
+        }
+        QComboBox:hover {
+            border: 1px solid #f28b40;
+        }
+        QComboBox::drop-down {
+            subcontrol-origin: padding;
+            subcontrol-position: top right;
+            width: 22px;
+            background-color: transparent;
+        }
+        QComboBox::down-arrow {
+            image: url(:/icons/arrow.png);  /*  화살표 이미지 사용 */
+            width: 14px;
+            height: 14px;
+        }
+        QComboBox QAbstractItemView {
+            font-size: 13px;
+            background-color: #1e1e1e;
+            color: white;
+            border: none;
+            selection-background-color: #f28b40;
+        }
+    )");
+
 
     stopSelector->addItems({"래미안아파트.파이낸셜뉴스", "신분당선 강남역", "지하철2호선 강남역", "논현역"});
 
@@ -187,14 +247,20 @@ void MainWindow::setupUI() {
     leftHeader->addLayout(leftHeaderHDiv);
     leftHeader->addLayout(statusLayout);
 
-    // ⚙ Settings 버튼
-    settingsButton = new QPushButton("⚙ Settings");
+    //  Settings 버튼
+    settingsButton = new QPushButton("Settings");
+    settingsButton->setIcon(QIcon(":/icons/settings.png"));
+    settingsButton->setIconSize(QSize(14, 14));
     settingsButton->setStyleSheet(R"(
         background: transparent;
+        border: none;
         color: lightgray;
         font-weight: normal;
+        padding-left: 6px;
+        outline: none;
     )");
     settingsButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+
 
     QVBoxLayout *settingsLayout = new QVBoxLayout;
     settingsLayout->setContentsMargins(0, 10, 15, 0);
@@ -213,29 +279,44 @@ void MainWindow::setupUI() {
 
 
     // stream frame
-    QLabel *streamTitle = new QLabel("📺");
-    streamTitle->setStyleSheet("font-size: 18px; color: white;");
+    QLabel *streamTitle = new QLabel("<img src=':/icons/stream.png' width='28' height='28'>");
+    streamTitle->setStyleSheet("margin-left: 0px; margin-top: 3px; font-size: 18px; color: white;");
     streamTitle->setAlignment(Qt::AlignLeft);
 
     streamSelector = new QComboBox(this);
     streamSelector->addItem("Live Stream");
     streamSelector->addItem("Recorded Video");
     streamSelector->setStyleSheet(R"(
-       QComboBox {
-           background-color: #2c2c2c;
-           border: 0px solid #444;
-           color: #ccc;
-           padding: 4px 8px;
-           font-size: 13px;
-       }
-       QComboBox QAbstractItemView {
-           background-color: #1e1e1e;
-           color: #ccc;
-           selection-background-color: #444;
-           border: none;
-           outline: none;
-       }
+        QComboBox {
+            background-color: #3a3a3a;
+            color: white;
+            border: #2a2a2a;
+            padding: 4px 10px;
+            padding-right: 28px;
+            font-size: 13px;
+        }
+        QComboBox:hover {
+            border: 1px solid #f28b40;
+        }
+        QComboBox::drop-down {
+            subcontrol-origin: padding;
+            subcontrol-position: top right;
+            width: 22px;
+            background-color: transparent;
+        }
+        QComboBox::down-arrow {
+            image: url(:/icons/arrow.png);
+            width: 14px;
+            height: 14px;
+        }
+        QComboBox QAbstractItemView {
+            background-color: #1e1e1e;
+            color: white;
+            border: none;
+            selection-background-color: #f28b40;
+        }
     )");
+
 
 
     videoWidget = new QVideoWidget(this);
@@ -263,7 +344,7 @@ void MainWindow::setupUI() {
     QVBoxLayout *streamLayout = new QVBoxLayout;
     streamLayout->setAlignment(Qt::AlignVCenter);
     streamLayout->addLayout(titleLayout);
-    streamLayout->addSpacing(2);
+    streamLayout->addSpacing(0);
     streamLayout->addWidget(streamArea, 0, Qt::AlignHCenter);
     streamLayout->addWidget(videoWidget, 0, Qt::AlignHCenter);
 
@@ -298,7 +379,7 @@ void MainWindow::setupUI() {
                 videoThread = nullptr;
             }
 
-            QString videoPath = "http://192.168.0.59/output.mp4";
+            QString videoPath = "http://192.168.0.40/output.mp4";
             mediaPlayer->setSource(QUrl(videoPath));
             mediaPlayer->play();
         }
@@ -333,6 +414,7 @@ void MainWindow::setupUI() {
 
     // ✅ Info Table (헤더 제외 460px)
     infoTable = new QTableWidget(4, 2, busFrame);
+    infoTable->setSelectionMode(QAbstractItemView::NoSelection);
     infoTable->setFixedHeight(460);
     infoTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     infoTable->setMinimumWidth(busFrame->width());
@@ -437,14 +519,12 @@ void MainWindow::onStopChanged(int index) {
 void MainWindow::fetchBusData() {
     qDebug() << " fetchBusData() 진입. 현재 apiUrlBase:" << apiUrlBase;
 
-    /*
-    QNetworkRequest request(QUrl("http://192.168.0.76/cgi-bin/sequence.cgi"));
-    QNetworkReply *reply = networkManager->get(request);
-    */
-
     QUrl url(apiUrlBase);
     url.setPort(apiPort);
+
     QNetworkRequest request(url);
+    request.setSslConfiguration(createSslConfig());
+
     QNetworkReply *reply = networkManager->get(request);
 
     connect(reply, &QNetworkReply::finished, this, [=]() {
@@ -529,7 +609,7 @@ void MainWindow::fetchBusData() {
 }
 
 void MainWindow::playRecordedVideo() {
-    QString videoPath = "http://192.168.0.59/videos/output.mp4"; // 실제 URL
+    QString videoPath = "http://192.168.0.40/videos/output.mp4"; // 실제 URL
     mediaPlayer->setSource(QUrl(videoPath));
     mediaPlayer->play();
 }

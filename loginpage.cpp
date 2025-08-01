@@ -47,7 +47,7 @@ LoginPage::LoginPage(QWidget *parent) : QWidget(parent) {
     loginBtn->setStyleSheet(R"(
     background-color: #f28b40;
     border: none;
-    border-radius: 20px;
+    border-radius: 12px;
     color: white;
     font-weight: bold;
     font-size: 14px;

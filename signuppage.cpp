@@ -28,20 +28,22 @@ SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     titleLabel->setAlignment(Qt::AlignLeft);
 
     QLabel *emailLabel = new QLabel("Email Address");
-    emailLabel->setStyleSheet("font-size: 12px; color: #555;");
+    emailLabel->setStyleSheet("font-size: 11px; color: #555;");
     emailInput = new QLineEdit();
     emailInput->setPlaceholderText("이메일을 입력해주세요.");
-    emailInput->setStyleSheet("background-color: #f5f7fa; padding: 10px; border: none;");
+    emailInput->setStyleSheet("background-color: #f5f7fa; padding: 10px; border: none; border-radius: 0px; ");
+    emailInput->setFixedHeight(40);
 
     QLabel *passwordLabel = new QLabel("Password");
-    passwordLabel->setStyleSheet("font-size: 12px; color: #555;");
+    passwordLabel->setStyleSheet("font-size: 11px; color: #555;");
     passwordInput = new QLineEdit();
     passwordInput->setPlaceholderText("비밀번호를 입력해주세요.");
     passwordInput->setEchoMode(QLineEdit::Password);
-    passwordInput->setStyleSheet("background-color: #f5f7fa; padding: 10px; border: none;");
+    passwordInput->setStyleSheet("background-color: #f5f7fa; padding: 10px; border: none; border-radius: 0px; ");
+    passwordInput->setFixedHeight(40);
 
     QLabel *passwordConfrimLabel = new QLabel("Rewrite Password");
-    passwordConfrimLabel->setStyleSheet("font-size: 12px; color: #555;");
+    passwordConfrimLabel->setStyleSheet("font-size: 11px; color: #555;");
 
     passwordMismatchLabel = new QLabel("※ 비밀번호가 일치하지 않습니다.");
     passwordMismatchLabel->setStyleSheet("color: red; font-size: 9px;");
@@ -56,14 +58,15 @@ SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     passwordConfirmInput = new QLineEdit();
     passwordConfirmInput->setPlaceholderText("비밀번호를 다시 입력해주세요.");
     passwordConfirmInput->setEchoMode(QLineEdit::Password);
-    passwordConfirmInput->setStyleSheet("background-color: #f5f7fa; padding: 10px; border: none;");
+    passwordConfirmInput->setStyleSheet("background-color: #f5f7fa; padding: 10px; border: none; border-radius: 0px;");
+    passwordConfirmInput->setFixedHeight(40);
 
     signUpBtn = new QPushButton("SIGN UP");
     signUpBtn->setFixedHeight(40);
     signUpBtn->setStyleSheet(R"(
         background-color: #f28b40;
         border: none;
-        border-radius: 20px;
+        border-radius: 12px;
         color: white;
         font-weight: bold;
         font-size: 14px;
@@ -100,7 +103,7 @@ SignUpPage::SignUpPage(QWidget *parent) : QWidget(parent) {
     formLayout->addSpacing(15);
     formLayout->addWidget(divider);
     formLayout->addWidget(loginLink);
-    formLayout->setContentsMargins(20, 8, 20, 8);
+    formLayout->setContentsMargins(30, 20, 30, 20);
     formLayout->setAlignment(Qt::AlignCenter);
     whiteBox->setLayout(formLayout);
 
