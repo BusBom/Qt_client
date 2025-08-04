@@ -105,7 +105,11 @@ MainWindow::MainWindow(QWidget *parent)
 
         QNetworkRequest request(QUrl("https://192.168.0.82/cgi-bin/config.cgi")); // 수정됨: http → https
         request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-        request.setSslConfiguration(createSslConfig());
+        //request.setSslConfiguration(createSslConfig());
+        QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+        config.setPeerVerifyMode(QSslSocket::VerifyNone);
+        request.setSslConfiguration(config);
+
 
         QNetworkReply *reply = networkManager->post(request, QJsonDocument(body).toJson());
 
@@ -145,7 +149,8 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::setupUI() {
     // 🚍 Title + Icon
     QLabel *titleImgLabel = new QLabel("<img src=':/icons/busimage.png' width=32 height=32>");
-    titleImgLabel->setContentsMargins(3, 0, 0, 0);  // 왼쪽에서 오른쪽으로 3px 이동
+    titleImgLabel->setContentsMargins(3, -2, 0, 0);  // 왼쪽에서 오른쪽으로 3px 이동
+
     QLabel *titleTextLabel = new QLabel("<b style='font-size:22px; color: white;'> Live Dashboard</b>");
     titleTextLabel->setContentsMargins(0, 0, 0, 2);
     QFont hanwhaFont("Hanwha L", 13);
@@ -231,7 +236,7 @@ void MainWindow::setupUI() {
     QHBoxLayout *leftHeaderHDiv = new QHBoxLayout;
     leftHeaderHDiv->setAlignment(Qt::AlignLeft);
     leftHeaderHDiv->setContentsMargins(5, 0, 0, 0);
-    leftHeaderHDiv->setSpacing(10);
+    leftHeaderHDiv->setSpacing(5);
     leftHeaderHDiv->addWidget(titleImgLabel);
     leftHeaderHDiv->addWidget(titleTextLabel);
 
@@ -523,7 +528,12 @@ void MainWindow::fetchBusData() {
     url.setPort(apiPort);
 
     QNetworkRequest request(url);
-    request.setSslConfiguration(createSslConfig());
+    //request.setSslConfiguration(createSslConfig());
+
+    // 인증서 검증 끄기
+    QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+    config.setPeerVerifyMode(QSslSocket::VerifyNone);
+    request.setSslConfiguration(config);
 
     QNetworkReply *reply = networkManager->get(request);
 

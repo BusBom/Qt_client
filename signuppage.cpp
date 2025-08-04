@@ -156,6 +156,7 @@ void SignUpPage::handleSignUpClicked() {
             background-color: #f5f7fa;
             padding: 10px;
             border: 2px solid red;
+            border-radius: 0px;
         )");
         passwordMismatchLabel->show();
         return;

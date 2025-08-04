@@ -417,7 +417,11 @@ void SettingsDialog::onPageChanged(int index) {
 
         // SSL + 인증서 설정
         QNetworkRequest imgReq(QUrl("https://192.168.0.50/cgi-bin/capture.cgi"));
-        imgReq.setSslConfiguration(createSslConfig());
+        //imgReq.setSslConfiguration(createSslConfig());
+        QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+        config.setPeerVerifyMode(QSslSocket::VerifyNone);
+        imgReq.setSslConfiguration(config);
+
 
         QNetworkReply *imgReply = netManager->get(imgReq);
         connect(imgReply, &QNetworkReply::finished, this, [=]() {
@@ -460,7 +464,11 @@ void SettingsDialog::onUpdateClicked() {
         };
         QNetworkRequest req(QUrl("https://192.168.0.82/cgi-bin/config.cgi"));
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-        req.setSslConfiguration(createSslConfig());  // ✅ SSL 인증 설정
+        //req.setSslConfiguration(createSslConfig());  // ✅ SSL 인증 설정
+        QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+        config.setPeerVerifyMode(QSslSocket::VerifyNone);
+        req.setSslConfiguration(config);
+
 
         netManager->post(req, QJsonDocument(QJsonObject{{"camera", cameraObj}}).toJson());
     }
@@ -488,7 +496,11 @@ void SettingsDialog::onUpdateClicked() {
 
         QNetworkRequest req(QUrl("https://192.168.0.82/cgi-bin/roi-setup.cgi"));
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-        req.setSslConfiguration(createSslConfig());  // ✅ SSL 인증 설정
+        //req.setSslConfiguration(createSslConfig());  // ✅ SSL 인증 설정
+        QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+        config.setPeerVerifyMode(QSslSocket::VerifyNone);
+        req.setSslConfiguration(config);
+
 
         netManager->post(req, QJsonDocument(body).toJson());
         qDebug() << "✅ ROI 설정 전송 (원본 좌표 기준):" << body;
