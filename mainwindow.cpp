@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "settingsdialog.h"
 #include "ui_mainwindow.h"
+#include "configmanager.h"
 
 #include <QSslConfiguration>
 #include <QSslCertificate>
@@ -103,7 +104,8 @@ MainWindow::MainWindow(QWidget *parent)
         QJsonObject body;
         body["camera"] = cameraObj;
 
-        QNetworkRequest request(QUrl("https://192.168.0.82/cgi-bin/config.cgi")); // 수정됨: http → https
+        QString base = ConfigManager::getValue("camera_url");
+        QNetworkRequest request(QUrl(base + "/cgi-bin/config.cgi"));
         request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
         //request.setSslConfiguration(createSslConfig());
         QSslConfiguration config = QSslConfiguration::defaultConfiguration();
@@ -139,7 +141,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(busTimer, &QTimer::timeout, this, &MainWindow::fetchBusData);
     busTimer->start(1000);
 
-    apiUrlBase = "https://192.168.0.50/cgi-bin/sequence.cgi";  // 수정됨
+    //apiUrlBase = "https://192.168.0.50/cgi-bin/sequence.cgi";  // 수정됨
+    apiUrlBase = ConfigManager::getValue("api_base_url") + "/cgi-bin/sequence.cgi";
     apiPort = 443;  //  https 기본 포트로 설정 권장
     autoConnect = false;
 
@@ -384,7 +387,8 @@ void MainWindow::setupUI() {
                 videoThread = nullptr;
             }
 
-            QString videoPath = "http://192.168.0.40/output.mp4";
+            //QString videoPath = "http://192.168.0.40/output.mp4";
+            QString videoPath = ConfigManager::getValue("video_url") + "/videos/output.mp4";
             mediaPlayer->setSource(QUrl(videoPath));
             mediaPlayer->play();
         }
@@ -471,7 +475,7 @@ void MainWindow::setupUI() {
                 style = R"(
                 background-color: transparent;
                 color: white;
-                font-size: 16px;
+                font-size: 25px;
                 font-weight: bold;
             )";
             } else {
@@ -591,7 +595,14 @@ void MainWindow::fetchBusData() {
                 updateLabelStatus(statusStm32, online[2].toInt());  // STM32 상태
             }
 
-            QJsonArray sequence = rootObj["sequence"].toArray();
+            QJsonArray sequence;
+            if (rootObj.contains("sequence") && rootObj["sequence"].isObject()) {
+                QJsonObject seqObj = rootObj["sequence"].toObject();
+                if (seqObj.contains("sequence") && seqObj["sequence"].isArray()) {
+                    sequence = seqObj["sequence"].toArray();
+                }
+            }
+
 
             for (int row = 0; row < 4; ++row) {
                 QLabel *cell = qobject_cast<QLabel *>(infoTable->cellWidget(row, 0));
@@ -610,6 +621,13 @@ void MainWindow::fetchBusData() {
                     QLabel *cell = qobject_cast<QLabel *>(infoTable->cellWidget(row, 0));
                     if (cell) {
                         cell->setText(busNum);
+
+                        cell->setStyleSheet(R"(
+                            background-color: transparent;
+                            color: white;
+                            font-size: 25px;
+                            font-weight: bold;
+                        )");
                     }
                 }
             }
@@ -619,7 +637,8 @@ void MainWindow::fetchBusData() {
 }
 
 void MainWindow::playRecordedVideo() {
-    QString videoPath = "http://192.168.0.40/videos/output.mp4"; // 실제 URL
+    //QString videoPath = "http://192.168.0.40/videos/output.mp4"; // 실제 URL
+    QString videoPath = ConfigManager::getValue("video_url") + "/videos/output.mp4";
     mediaPlayer->setSource(QUrl(videoPath));
     mediaPlayer->play();
 }

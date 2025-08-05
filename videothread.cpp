@@ -1,4 +1,6 @@
 #include "videothread.h"
+#include "configmanager.h"
+
 #include <QDebug>
 #include <opencv2/opencv.hpp>
 
@@ -8,7 +10,7 @@ VideoThread::VideoThread(QObject *parent)
 void VideoThread::run() {
     qDebug() << "?? VideoThread run() started";
 
-    cv::VideoCapture cap("rtsp://192.168.0.64/profile2/media.smp", cv::CAP_FFMPEG);
+    cv::VideoCapture cap(ConfigManager::getValue("rtsp_url").toStdString(), cv::CAP_FFMPEG);
     if (!cap.isOpened()) {
         qWarning() << "❌ VideoCapture open 실패";
         return;

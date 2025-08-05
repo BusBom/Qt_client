@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "appmanager.h"
+#include "configmanager.h"
 
 #include <QApplication>
 #include <QLocale>
@@ -12,6 +13,8 @@ int main(int argc, char *argv[])
     qDebug() << "🟢 main() 진입";
 
     QApplication app(argc, argv);
+
+    ConfigManager::load();
 
     QStringList fontPaths = {
         ":/01HanwhaB.ttf",

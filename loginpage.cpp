@@ -134,6 +134,29 @@ void LoginPage::handleLoginClicked() {
     if (DBManager::instance().isValidUser(email, password)) {
         emit loginSuccess();  // 로그인 성공 시 MainWindow로 이동
     } else {
-        QMessageBox::critical(this, "로그인 실패", "이메일/비밀번호가 일치하지 않습니다.");
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle("로그인 실패");
+        msgBox.setText("이메일/비밀번호가 일치하지 않습니다.");
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setStyleSheet(R"(
+            QMessageBox {
+                background-color: white;
+            }
+            QLabel {
+                background-color: transparent;
+                color: black;
+                font-size: 14px;
+            }
+            QPushButton {
+                background-color: #f28b40;
+                color: white;
+                border-radius: 10px;
+                padding: 5px 10px;
+                font-weight: bold;
+                min-width: 60px;
+            }
+        )");
+        msgBox.exec();
+
     }
 }

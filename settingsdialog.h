@@ -27,6 +27,7 @@
 
 // ROI 설정용 커스텀 위젯
 #include "roi_frame.h"
+#include "videopreviewthread.h"
 
 class ClickableSlider : public QSlider
 {
@@ -93,6 +94,8 @@ private:
     ClickableSlider *contrastSlider;
     ClickableSlider *exposureSlider;
     ClickableSlider *saturationSlider;
+    VideoPreviewThread *previewThread = nullptr;
+    QLabel *previewVideo;
 
     // Sleep Mode
     QTimeEdit *sleepStartEdit;
@@ -102,8 +105,8 @@ private:
     QPushButton *cancelBtn;
 
     QLabel *originalFrame;
-    QVideoWidget *previewVideo;
-    QMediaPlayer *previewPlayer;
+    //QVideoWidget *previewVideo;
+    //QMediaPlayer *previewPlayer;
     QPushButton *applyBtn;
 
     QNetworkAccessManager *netManager;

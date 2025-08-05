@@ -14,6 +14,7 @@ find_package(Qt6 REQUIRED COMPONENTS
 )
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
 # ✅ OpenCV 추가
 set(OpenCV_DIR "C:/opencv/build")
@@ -37,6 +38,8 @@ qt_add_executable(Busbomproject
     dbmanager.h dbmanager.cpp
     videothread.h videothread.cpp
     roi_frame.h roi_frame.cpp
+    configmanager.h configmanager.cpp
+    videopreviewthread.h videopreviewthread.cpp
 )
 
 qt_add_resources(RESOURCES img.qrc)
@@ -62,6 +65,7 @@ target_link_libraries(Busbomproject
 )
 target_link_libraries(Busbomproject PRIVATE Qt6::Core)
 target_link_libraries(Busbomproject PRIVATE Qt6::Widgets)
+target_link_libraries(Busbomproject PRIVATE Qt6::Core)
 
 include(GNUInstallDirs)
 

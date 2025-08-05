@@ -9,3 +9,4 @@ Makefile*
 *.dll
 *.so
 *.a
+config.json

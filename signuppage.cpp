@@ -165,14 +165,60 @@ void SignUpPage::handleSignUpClicked() {
             background-color: #f5f7fa;
             padding: 10px;
             border: none;
+            border-radius: 0px;
         )");
         passwordMismatchLabel->hide();
     }
 
     if (DBManager::instance().addUser(email, password)) {
-        QMessageBox::information(this, "가입 완료", "가입이 완료되었습니다!");
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle("가입 완료");
+        msgBox.setText("가입이 완료되었습니다!");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.setStyleSheet(R"(
+        QMessageBox {
+            background-color: white;
+        }
+        QLabel {
+            background-color: transparent;
+            color: black;
+            font-size: 14px;
+        }
+        QPushButton {
+            background-color: #f28b40;
+            color: white;
+            border-radius: 10px;
+            padding: 5px 10px;
+            font-weight: bold;
+            min-width: 60px;
+        }
+    )");
+        msgBox.exec();
         emit switchToLoginPage();
     } else {
-        QMessageBox::critical(this, "가입 실패", "이미 존재하는 이메일입니다!");
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle("가입 실패");
+        msgBox.setText("이미 존재하는 이메일입니다!");
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setStyleSheet(R"(
+        QMessageBox {
+            background-color: white;
+        }
+        QLabel {
+            background-color: transparent;
+            color: black;
+            font-size: 14px;
+        }
+        QPushButton {
+            background-color: #f28b40;
+            color: white;
+            border-radius: 10px;
+            padding: 5px 10px;
+            font-weight: bold;
+            min-width: 60px;
+        }
+    )");
+        msgBox.exec();
     }
+
 }
