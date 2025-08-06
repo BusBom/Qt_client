@@ -45,7 +45,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     netManager = new QNetworkAccessManager(this);
     previewThread = new VideoPreviewThread(this);
 
-    // ✅ 프리뷰 수신 시 QLabel에 표시
+    // 프리뷰 수신 시 QLabel에 표시
     connect(previewThread, &VideoPreviewThread::frameReady, this, [=](const QImage &img) {
         previewVideo->setPixmap(QPixmap::fromImage(img).scaled(previewVideo->size(), Qt::KeepAspectRatio));
     });
@@ -124,7 +124,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     };
 
 
-    // 🌐 네트워크 설정
+    // 네트워크 설정
     apiUrlEdit = new QLineEdit(this);
     portEdit = new QLineEdit(this);
     autoConnectCheck = new QCheckBox("Auto Connect", this);
@@ -140,7 +140,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     QWidget *networkPage = makeSection("네트워크 설정", networkWidget);
 
 
-    // 🎥 카메라 설정
+    // 카메라 설정
     brightnessSlider = new ClickableSlider(Qt::Horizontal, this);
     brightnessSlider->setRange(0, 100);
     contrastSlider = new ClickableSlider(Qt::Horizontal, this);
@@ -200,19 +200,19 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     applyLayout->addWidget(applyBtn);
     applyLayout->setContentsMargins(0, 0, 5, 0);
 
-    // 📷 원본 영상
+    // 원본 영상
     originalFrame = new QLabel("원본 영상");
     originalFrame->setFixedSize(350, 270);
     originalFrame->setStyleSheet("background-color: black; border: 1px solid gray;");
     originalFrame->setAlignment(Qt::AlignCenter);
 
-    // ✅ previewVideo를 QLabel로 변경 (OpenCV 연동)
+    // previewVideo를 QLabel로 변경 (OpenCV 연동)
     previewVideo = new QLabel("Preview");
     previewVideo->setFixedSize(350, 270);
     previewVideo->setStyleSheet("background-color: black; border: 1px solid gray;");
     previewVideo->setAlignment(Qt::AlignCenter);
 
-    // 📷 영상 두 개를 좌우로 딱 붙임
+    // 영상 두 개를 좌우로 딱 붙임
     QHBoxLayout *previewLayout = new QHBoxLayout;
     previewLayout->setSpacing(0);
     previewLayout->setContentsMargins(0, 0, 0, 0);
@@ -229,7 +229,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     cameraContent->setLayout(cameraLayout);
     QWidget *cameraPage = makeSection("카메라 설정", cameraContent);
 
-    // 🧭 ROI 설정
+    // ROI 설정
     roiCanvas = new RoiFrame(this);
     roiCanvas->setFixedSize(640, 360);
     roiCanvas->setStyleSheet("background-color: black; border: 1px solid gray;");
@@ -268,7 +268,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
         updateRoiDisplay();
     });
 
-    // 🌙 절전모드 설정
+    // 절전모드 설정
     sleepStartEdit = new QTimeEdit(this);
     sleepEndEdit = new QTimeEdit(this);
     sleepStartEdit->setDisplayFormat("HH:mm");
@@ -284,14 +284,14 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     sleepContent->setLayout(sleepForm);
     QWidget *sleepPage = makeSection("절전모드 설정", sleepContent);
 
-    // ✅ stackedPages에 각 페이지 추가
+    // stackedPages에 각 페이지 추가
     stackedPages = new QStackedWidget(this);
     stackedPages->addWidget(networkPage);
     stackedPages->addWidget(cameraPage);
     stackedPages->addWidget(roiPage);
     stackedPages->addWidget(sleepPage);
 
-    // ✅ 하단 버튼 영역
+    // 하단 버튼 영역
     updateBtn = new QPushButton("Update", this);
     cancelBtn = new QPushButton("Cancel", this);
     QString flatBtnStyle = R"(
@@ -336,7 +336,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     setWindowTitle("Settings");
     resize(950, 560);
 
-    // ✅ Apply 버튼 동작 정의
+    // Apply 버튼 동작 정의
     connect(applyBtn, &QPushButton::clicked, this, [=]() {
         QJsonObject cameraObj {
             {"brightness", brightnessSlider->value()},
@@ -363,16 +363,16 @@ SettingsDialog::SettingsDialog(QWidget *parent)
                 previewThread->stop();
                 previewThread->wait();
                 previewThread->setRtspUrl(previewRtspUrl);
-                previewThread->start();  // ✅ 미리보기 시작
+                previewThread->start();
             }
         });
     });
 
-    // ✅ 카메라 페이지 진입 시 기존 영상 표시
+    // 카메라 페이지 진입 시 기존 영상 표시
     connect(pageSelector, &QListWidget::currentRowChanged, this, [=](int index) {
         onPageChanged(index);
 
-        if (index != 1 && previewThread) {  // ✅ 다른 페이지 이동 시 프리뷰 정지
+        if (index != 1 && previewThread) {
             previewThread->stop();
             previewThread->wait();
         }
@@ -424,7 +424,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 QSslConfiguration SettingsDialog::createSslConfig() {
     QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
 
-    qDebug() << "📄 인증서/키/CA 경로:"
+    qDebug() << " 인증서/키/CA 경로:"
              << QCoreApplication::applicationDirPath() + "/client.cert.pem"
              << QCoreApplication::applicationDirPath() + "/client.key.pem"
              << QCoreApplication::applicationDirPath() + "/ca.cert.pem";
@@ -496,7 +496,6 @@ void SettingsDialog::onPageChanged(int index) {
         cancelBtn->setText("Reset ROI");
 
         // SSL + 인증서 설정
-        //QNetworkRequest imgReq(QUrl("https://192.168.0.50/cgi-bin/capture.cgi"));
         QString base = ConfigManager::getValue("api_base_url");
         QNetworkRequest imgReq(QUrl(base + "/cgi-bin/capture.cgi"));
 
@@ -510,7 +509,7 @@ void SettingsDialog::onPageChanged(int index) {
         connect(imgReply, &QNetworkReply::finished, this, [=]() {
             imgReply->deleteLater();
             QByteArray responseData = imgReply->readAll();
-            qDebug() << "📦 수신 데이터 크기:" << responseData.size();
+            qDebug() << " 수신 데이터 크기:" << responseData.size();
 
             // QImageReader로 MIME 명시 (JPEG 지정)
             QBuffer buffer(&responseData);
@@ -520,14 +519,14 @@ void SettingsDialog::onPageChanged(int index) {
 
             if (!img.isNull()) {
                 roiCanvas->setBackgroundImage(QPixmap::fromImage(img));
-                qDebug() << "✅ 캡처 이미지 수신 및 적용 완료";
+                qDebug() << " 캡처 이미지 수신 및 적용 완료";
             } else {
-                qDebug() << "❌ 캡처 이미지 로딩 실패";
+                qDebug() << " 캡처 이미지 로딩 실패";
                 QFile f("capture_debug_failed.jpg");
                 f.open(QIODevice::WriteOnly);
                 f.write(responseData);
                 f.close();
-                qDebug() << "📄 capture_debug_failed.jpg 저장 완료";
+                qDebug() << " capture_debug_failed.jpg 저장 완료";
             }
         });
     } else {
@@ -545,12 +544,12 @@ void SettingsDialog::onUpdateClicked() {
             {"saturation", saturationSlider->value()},
             {"preview", false}
         };
-        //QNetworkRequest req(QUrl("https://192.168.0.82/cgi-bin/config.cgi"));
+
         QString camBase = ConfigManager::getValue("camera_url");
         QNetworkRequest req(QUrl(camBase + "/cgi-bin/config.cgi"));
 
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-        //req.setSslConfiguration(createSslConfig());  // ✅ SSL 인증 설정
+        //req.setSslConfiguration(createSslConfig());  // SSL 인증 설정
         QSslConfiguration config = QSslConfiguration::defaultConfiguration();
         config.setPeerVerifyMode(QSslSocket::VerifyNone);
         req.setSslConfiguration(config);
@@ -580,19 +579,18 @@ void SettingsDialog::onUpdateClicked() {
         QJsonObject body;
         body["stop_rois"] = stopRois;
 
-        //QNetworkRequest req(QUrl("https://192.168.0.82/cgi-bin/roi-setup.cgi"));
         QString camBase = ConfigManager::getValue("camera_url");
         QNetworkRequest req(QUrl(camBase + "/cgi-bin/roi-setup.cgi"));
 
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-        //req.setSslConfiguration(createSslConfig());  // ✅ SSL 인증 설정
+        //req.setSslConfiguration(createSslConfig());  // SSL 인증 설정
         QSslConfiguration config = QSslConfiguration::defaultConfiguration();
         config.setPeerVerifyMode(QSslSocket::VerifyNone);
         req.setSslConfiguration(config);
 
 
         netManager->post(req, QJsonDocument(body).toJson());
-        qDebug() << "✅ ROI 설정 전송 (원본 좌표 기준):" << body;
+        qDebug() << " ROI 설정 전송 (원본 좌표 기준):" << body;
     }
 
 

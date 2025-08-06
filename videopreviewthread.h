@@ -21,7 +21,7 @@ public:
     void stop();
 
 signals:
-    void frameReady(const QImage &frame);  // 프레임 수신 시 전달
+    void frameReady(const QImage &frame);
 
 protected:
     void run() override;

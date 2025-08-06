@@ -42,7 +42,7 @@ QSslConfiguration MainWindow::createSslConfig() {
     if (certFile.open(QIODevice::ReadOnly))
         cert = QSslCertificate(certFile.readAll(), QSsl::Pem);
     else
-        qWarning() << "❌ 클라이언트 인증서 로드 실패";
+        qWarning() << " 클라이언트 인증서 로드 실패";
 
     // 클라이언트 키
     QSslKey key;
@@ -50,7 +50,7 @@ QSslConfiguration MainWindow::createSslConfig() {
     if (keyFile.open(QIODevice::ReadOnly))
         key = QSslKey(keyFile.readAll(), QSsl::Rsa, QSsl::Pem);
     else
-        qWarning() << "❌ 클라이언트 개인키 로드 실패";
+        qWarning() << " 클라이언트 개인키 로드 실패";
 
     // CA 인증서
     QList<QSslCertificate> caCerts;
@@ -58,7 +58,7 @@ QSslConfiguration MainWindow::createSslConfig() {
     if (caFile.open(QIODevice::ReadOnly))
         caCerts = QSslCertificate::fromData(caFile.readAll(), QSsl::Pem);
     else
-        qWarning() << "❌ CA 인증서 로드 실패";
+        qWarning() << " CA 인증서 로드 실패";
 
     sslConfig.setLocalCertificate(cert);
     sslConfig.setPrivateKey(key);
@@ -117,7 +117,7 @@ MainWindow::MainWindow(QWidget *parent)
 
         connect(reply, &QNetworkReply::finished, this, [=]() {
             QByteArray response = reply->readAll();
-            qDebug() << "📷 카메라 설정 응답:" << response;
+            qDebug() << " 카메라 설정 응답:" << response;
 
             QJsonDocument doc = QJsonDocument::fromJson(response);
             if (!doc.isNull() && doc.isObject()) {
@@ -127,7 +127,7 @@ MainWindow::MainWindow(QWidget *parent)
                 settingsDlg->setExposure(resCam.value("exposure").toInt());
                 settingsDlg->setSaturation(resCam.value("saturation").toInt());
 
-                qDebug() << "✅ 설정 반영됨 -> 밝기:" << resCam.value("brightness").toInt()
+                qDebug() << " 설정 반영됨 -> 밝기:" << resCam.value("brightness").toInt()
                          << ", 명암:" << resCam.value("contrast").toInt()
                          << ", 노출:" << resCam.value("exposure").toInt()
                          << ", 채도:" << resCam.value("saturation").toInt();
@@ -141,7 +141,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(busTimer, &QTimer::timeout, this, &MainWindow::fetchBusData);
     busTimer->start(1000);
 
-    //apiUrlBase = "https://192.168.0.50/cgi-bin/sequence.cgi";  // 수정됨
     apiUrlBase = ConfigManager::getValue("api_base_url") + "/cgi-bin/sequence.cgi";
     apiPort = 443;  //  https 기본 포트로 설정 권장
     autoConnect = false;
@@ -170,7 +169,7 @@ void MainWindow::setupUI() {
             color: white;
             border: none;
             padding: 6px 10px;
-            padding-right: 30px;  /* 드롭다운 화살표 여백 */
+            padding-right: 30px;
         }
         QComboBox:hover {
             border: 1px solid #f28b40;
@@ -182,7 +181,7 @@ void MainWindow::setupUI() {
             background-color: transparent;
         }
         QComboBox::down-arrow {
-            image: url(:/icons/arrow.png);  /*  화살표 이미지 사용 */
+            image: url(:/icons/arrow.png);
             width: 14px;
             height: 14px;
         }
@@ -205,7 +204,7 @@ void MainWindow::setupUI() {
     statusStm32 = new QLabel("Display: 🔴");
     statusStm32->setStyleSheet("background-color: #313131;");
 
-    statusRpi->setFixedHeight(20);   // 더 작게도 가능 (예: 18, 16)
+    statusRpi->setFixedHeight(20);
     statusCam->setFixedHeight(20);
     statusStm32->setFixedHeight(20);
 
@@ -387,7 +386,6 @@ void MainWindow::setupUI() {
                 videoThread = nullptr;
             }
 
-            //QString videoPath = "http://192.168.0.40/output.mp4";
             QString videoPath = ConfigManager::getValue("video_url") + "/videos/output.mp4";
             mediaPlayer->setSource(QUrl(videoPath));
             mediaPlayer->play();
@@ -421,7 +419,7 @@ void MainWindow::setupUI() {
     headerLayout->addWidget(busNumberLabel);
     headerLayout->addWidget(platformLabel);
 
-    // ✅ Info Table (헤더 제외 460px)
+    // Info Table
     infoTable = new QTableWidget(4, 2, busFrame);
     infoTable->setSelectionMode(QAbstractItemView::NoSelection);
     infoTable->setFixedHeight(460);
@@ -438,7 +436,7 @@ void MainWindow::setupUI() {
             border-bottom: 1px solid #333;
             border-right: 1px solid #333;
             border-left: 1px solid #333;
-            padding: 0px;  /* ✅ 간격 제거 */
+            padding: 0px;
         }
     )");
 
@@ -450,19 +448,19 @@ void MainWindow::setupUI() {
     infoTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     infoTable->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-    // ✅ Layout
+    // Layout
     QVBoxLayout *busFrameLayout = new QVBoxLayout(busFrame);
     busFrameLayout->setContentsMargins(0, 0, 0, 0);
     busFrameLayout->setSpacing(0);
     busFrameLayout->addWidget(headerFrame);
     busFrameLayout->addWidget(infoTable, 1);
 
-    // ✅ Cell 내용 설정
+    // Cell 내용 설정
     for (int row = 0; row < 4; ++row) {
         for (int col = 0; col < 2; ++col) {
             QLabel *cell = new QLabel("", infoTable);
             cell->setAlignment(Qt::AlignCenter);
-            cell->setContentsMargins(0, 0, 0, 0);  // ✅ 내부 여백 제거
+            cell->setContentsMargins(0, 0, 0, 0);
             QString style;
 
             if (col == 1) {
@@ -544,7 +542,7 @@ void MainWindow::fetchBusData() {
     connect(reply, &QNetworkReply::finished, this, [=]() {
         if (reply->error() == QNetworkReply::NoError) {
             QByteArray response = reply->readAll();
-            qDebug() << "🎥 서버 응답: " << response;
+            qDebug() << " 서버 응답: " << response;
 
             QJsonParseError parseError;
             QJsonDocument doc = QJsonDocument::fromJson(response, &parseError);
@@ -637,7 +635,6 @@ void MainWindow::fetchBusData() {
 }
 
 void MainWindow::playRecordedVideo() {
-    //QString videoPath = "http://192.168.0.40/videos/output.mp4"; // 실제 URL
     QString videoPath = ConfigManager::getValue("video_url") + "/videos/output.mp4";
     mediaPlayer->setSource(QUrl(videoPath));
     mediaPlayer->play();

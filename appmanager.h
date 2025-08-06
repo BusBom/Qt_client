@@ -19,9 +19,9 @@ private:
     MainWindow *mainWindow;
 
 private slots:
-    void showSignupPage();    // 회원가입 페이지로
-    void showLoginPage();     // 로그인 페이지로
-    void loginSuccess();      // 로그인 성공 → 메인 대시보드
+    void showSignupPage();    // to signup page
+    void showLoginPage();     // to login page
+    void loginSuccess();      // log in -> main dashboard
 };
 
 #endif // APPMANAGER_H

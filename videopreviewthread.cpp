@@ -27,7 +27,7 @@ void VideoPreviewThread::stop()
 void VideoPreviewThread::run()
 {
     if (rtspUrl.isEmpty()) {
-        qWarning() << "❌ RTSP URL이 설정되지 않았습니다.";
+        qWarning() << " RTSP URL이 설정되지 않았습니다.";
         return;
     }
 
@@ -36,16 +36,16 @@ void VideoPreviewThread::run()
     cv::VideoCapture cap(rtspUrl.toStdString(), cv::CAP_FFMPEG);
 
     if (!cap.isOpened()) {
-        qWarning() << "❌ RTSP 스트림 열기 실패:" << rtspUrl;
+        qWarning() << " RTSP 스트림 열기 실패:" << rtspUrl;
         return;
     }
 
-    qDebug() << "📡 RTSP 스트림 수신 시작:" << rtspUrl;
+    qDebug() << " RTSP 스트림 수신 시작:" << rtspUrl;
 
     cv::Mat frame;
     while (running) {
         if (!cap.read(frame)) {
-            qWarning() << "⚠️ 프레임 읽기 실패";
+            qWarning() << "️ 프레임 읽기 실패";
             QThread::msleep(100);
             continue;
         }
@@ -66,5 +66,5 @@ void VideoPreviewThread::run()
     }
 
     cap.release();
-    qDebug() << "🛑 VideoPreviewThread 종료됨";
+    qDebug() << " VideoPreviewThread 종료됨";
 }

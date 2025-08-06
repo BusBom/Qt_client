@@ -14,8 +14,8 @@ public:
     explicit LoginPage(QWidget *parent = nullptr);
 
 signals:
-    void loginSuccess();             // 로그인 성공 → 대시보드로
-    void switchToSignupPage();       // 회원가입 창으로 전환
+    void loginSuccess();
+    void switchToSignupPage();
 
 private slots:
     void handleLoginClicked();

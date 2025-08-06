@@ -30,17 +30,16 @@ int main(int argc, char *argv[])
     for (const QString &path : fontPaths) {
         int id = QFontDatabase::addApplicationFont(path);
         if (id == -1) {
-            qWarning() << "❌ Failed to load font:" << path;
+            qWarning() << " Failed to load font:" << path;
         } else {
             QStringList families = QFontDatabase::applicationFontFamilies(id);
-            qDebug() << "✅ Loaded:" << path << "→" << families;
+            qDebug() << " Loaded:" << path << "→" << families;
             if (path.contains("hanwhaGothic L")) {
                 defaultFontFamily = families.first();
             }
         }
     }
 
-    // 2. 전역 폰트는 Pretendard로만 설정
     if (!defaultFontFamily.isEmpty()) {
         QFont defaultFont(defaultFontFamily, 11);
         QApplication::setFont(defaultFont);
@@ -60,6 +59,6 @@ int main(int argc, char *argv[])
     manager.show();
 
     int result = app.exec();  //이벤트 루프 진입 : 마우스클릭, 키보드 입력 등 Qt가 내부적으로 감시
-    qDebug() << "🔴 main() 종료, 코드:" << result;
+    qDebug() << " main() 종료, 코드:" << result;
     return result;
 }
